@@ -1,0 +1,16 @@
+$images: '../images';
+
+body {
+  background-color: grey;
+}
+
+h1 {
+  font-size: 24px;
+}
+
+div.test {
+  background-image: url('#{$images}/test.png');
+  background-size: cover;
+  height: 400px;
+  width: 400px;
+}
