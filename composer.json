@@ -2,7 +2,6 @@
   "name": "leungd/tatami",
   "description": "Starter theme to build a Timber theme",
   "type": "wordpress-theme",
-  "minimum-stability": "stable",
   "authors": [
     {
       "email": "me@derekleung.ca",
@@ -17,8 +16,5 @@
   ],
   "require": {
     "timber/timber": "^1.7"
-  },
-  "require-dev": {
-    "phpunit/phpunit": "~7.0"
   }
 }
