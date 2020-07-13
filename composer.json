@@ -1,12 +1,12 @@
 {
-  "name": "upstatement/timber-starter-theme",
+  "name": "leungd/tatami",
   "description": "Starter theme to build a Timber theme",
   "type": "wordpress-theme",
   "minimum-stability": "stable",
   "authors": [
     {
-      "email": "jared@upstatement.com",
-      "name": "jarednova"
+      "email": "me@derekleung.ca",
+      "name": "leungd"
     }
   ],
   "repositories": [
