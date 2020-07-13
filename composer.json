@@ -2,6 +2,7 @@
   "name": "leungd/tatami",
   "description": "Starter theme to build a Timber theme",
   "type": "wordpress-theme",
+  "minimum-stability": "stable",
   "authors": [
     {
       "email": "me@derekleung.ca",
