@@ -1,0 +1,41 @@
+<html {{ site.language_attributes }}>
+
+	{% block head %}
+		{% include 'partials/head.twig' %}
+	{% endblock %}
+
+	<body class="{{body_class}}">
+
+		<a class="skip-link screen-reader-text" href="#content">
+			{{ _e( 'Skip to content') }}
+		</a>
+
+		{% block header %}
+			{% include 'header.twig' %}
+		{% endblock %}
+
+		<main id="main" role="main">
+
+			<{{tag}} class="flex flex-col max-w-full">
+				{% block pageHeader %}
+					{% include 'partials/page-header.twig' with {
+              title: title,
+            } %}
+				{% endblock %}
+				{% block content %}
+					<div class="grid py-10 grid-cols-layout sm:gap-10">
+						Sorry, no content
+					</div>
+				{% endblock %}
+				{% block modules %}{% endblock %}
+			</{{tag}}>
+
+		</main>
+
+		{% block footer %}
+			{% include 'footer.twig' %}
+			{{ function('wp_footer') }}
+		{% endblock %}
+
+	</body>
+</html>

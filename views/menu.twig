@@ -1,0 +1,37 @@
+{% if menu %}
+	{% if items %}
+		<ul class="flex flex-col gap-4 lg:gap-6 lg:flex-row">
+			{% for item in items %}
+				<li class="relative group">
+					<div class="flex gap-2 justify-between items-center">
+						<a class="py-2 text-lg text-white lg:text-sm" target="{{ item.target }}" href="{{ item.link }}" data-menu-item>
+							{{ item.title }}
+						</a>
+
+						{% if item.children %}
+							<button data-submenu-toggle aria-haspopup="true" aria-expanded="false" class="lg:transition lg:duration-200 lg:ease-out lg:motion-safe:group-hover:rotate-90" title="Open submenu">
+								<svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 640 640" class="w-4 h-4">
+									<path fill="#fff" d="M471.1 297.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L403.2 320 233.9 150.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/>
+								</svg>
+							</button>
+						{% endif %}
+					</div>
+
+					{% if item.children %}
+						<ul data-submenu-content class="hidden flex-col lg:py-2 lg:px-4 lg:bg-white lg:rounded-lg lg:shadow-lg lg:ring-1 lg:ring-black/5 lg:absolute lg:left-0 lg:top-full lg:mt-0 lg:min-w-48 lg:z-50 lg:flex lg:opacity-0 lg:translate-y-2 lg:invisible lg:transition lg:duration-200 lg:ease-out motion-safe:lg:transition-transform lg:group-hover:opacity-100 lg:group-hover:translate-y-0 lg:group-hover:visible lg:group-focus-within:opacity-100 lg:group-focus-within:translate-y-0 lg:group-focus-within:visible lg:before:content-[''] lg:before:absolute lg:before:-top-2 lg:before:left-0 lg:before:h-2 lg:before:w-full">
+							{% for child in item.children %}
+								<li>
+									<a href="{{ child.link }}" class="block py-2 text-blue-300 lg:text-blue-800 lg:text-sm">
+										{{ child.title }}
+									</a>
+								</li>
+							{% endfor %}
+						</ul>
+					{% endif %}
+				</li>
+			{% endfor %}
+
+
+		</ul>
+	{% endif %}
+{% endif %}

@@ -1,0 +1,190 @@
+@import "tailwindcss";
+
+/* Configure content sources for Twig templates */
+@source "../../views/**/*.twig";
+
+/* Load typography plugin */
+@plugin "@tailwindcss/typography";
+
+/* Theme customizations */
+@theme {
+  --typography-body-max-width: none;
+}
+
+/* ==========================================================================
+   Layout
+   ========================================================================== */
+
+body {
+  background-color: #F3F3F3;
+  overflow-x: hidden;
+}
+
+.fluid-grid {
+  --col-gap: clamp(1rem, 3vw, 4rem);
+  --content-max-width: var(--breakpoint-lg);
+  --padding-left: clamp(calc(env(safe-area-inset-left, 0rem) + 1rem), 2vw, calc(env(safe-area-inset-left, 0rem) + 2rem));
+  --padding-right: clamp(calc(env(safe-area-inset-right, 0rem) + 1rem), 2vw, calc(env(safe-area-inset-right, 0rem) + 2rem));
+  --col-width: calc((min(calc(100% - var(--padding-left) - var(--padding-right) - 2 * var(--col-gap)), var(--content-max-width)) - 11 * var(--col-gap)) / 12);
+  --side-width: minmax(0, 1fr);
+  column-gap: var(--col-gap);
+  display: grid;
+  grid-template-columns:
+    [full-start] var(--side-width)
+    [content-start col-1] var(--col-width)
+    [col-2] var(--col-width)
+    [col-3] var(--col-width)
+    [col-4] var(--col-width)
+    [col-5] var(--col-width)
+    [col-6] var(--col-width)
+    [col-7] var(--col-width)
+    [col-8] var(--col-width)
+    [col-9] var(--col-width)
+    [col-10] var(--col-width)
+    [col-11] var(--col-width)
+    [col-12] var(--col-width) [content-end]
+    var(--side-width) [full-end];
+  width: 100%;
+}
+
+.span-content .span-md,
+.span-lg,
+.span-xl {
+  grid-column: content;
+}
+
+.span-full {
+  grid-column: full;
+}
+
+@variant md {
+  .span-md {
+    grid-column: col-3 / span 8;
+  }
+  .span-lg {
+    grid-column: col-2 / span 10;
+  }
+  .span-xl {
+    grid-column: col-1 / span 12;
+  }
+}
+
+@variant lg {
+  .span-md {
+    grid-column: col-4 / span 6;
+  }
+  .span-lg {
+    grid-column: col-3 / span 8;
+  }
+  .span-xl {
+    grid-column: col-2 / span 10;
+  }
+}
+
+/* ==========================================================================
+   Typography
+   ========================================================================== */
+
+html {
+  @apply text-base lg:text-lg;
+}
+
+@layer base {
+  :root {
+    --text-xs: clamp(0.75rem, 0.6rem + 0.8vw, 1rem);
+    --text-sm: clamp(0.875rem, 0.7rem + 0.9vw, 1.125rem);
+    --text-base: clamp(1rem, 0.8rem + 1vw, 1.25rem);
+    --text-lg: clamp(1.125rem, 0.9rem + 1.2vw, 1.5rem);
+    --text-xl: clamp(1.25rem, 1rem + 1.4vw, 1.75rem);
+    --text-2xl: clamp(1.5rem, 1.2rem + 1.6vw, 2rem);
+    --text-3xl: clamp(1.875rem, 1.5rem + 1.8vw, 2.5rem);
+    --text-4xl: clamp(2.25rem, 1.8rem + 2vw, 3rem);
+    --text-5xl: clamp(3rem, 2.4rem + 2.5vw, 4rem);
+    --text-6xl: clamp(3.75rem, 3rem + 3vw, 5rem);
+  }
+}
+
+/* ==========================================================================
+   Forms
+   ========================================================================== */
+
+.fieldGroups {
+  @apply grid grid-cols-2 gap-2;
+}
+
+.fieldGroup {
+  & p {
+    @apply mb-0;
+  }
+
+  &.-full {
+    @apply col-span-2;
+  }
+
+  &.-half {
+    @apply col-span-2 lg:col-span-1;
+  }
+
+  &.-h {
+    @apply absolute -left-[9999px] top-auto w-px h-px overflow-hidden;
+  }
+
+  & label {
+    @apply text-white;
+  }
+
+  & input {
+    @apply border-b border-white bg-transparent py-2 w-full;
+  }
+
+  & textarea {
+    @apply border-b border-white bg-transparent py-2 w-full;
+  }
+
+  & [type="submit"] {
+    @apply border-none w-auto inline-block cursor-pointer px-6 py-4 text-blue-600 bg-white/60 hover:bg-white hover:text-blue-600 transition-all duration-300 mt-6;
+  }
+}
+
+.wpcf7 {
+  & .wpcf7-form {
+    & br {
+      @apply hidden;
+    }
+
+    & .wpcf7-response-output {
+      @apply text-white mx-0 leading-snug;
+    }
+
+    & .wpcf7-not-valid-tip {
+      @apply text-white text-xs my-2 italic;
+    }
+  }
+
+  & .wpcf7-acceptance .wpcf7-list-item {
+    @apply m-0;
+
+    & label {
+      @apply flex items-start cursor-pointer;
+
+      & input[type="checkbox"] {
+        @apply w-auto mr-2 mt-1 cursor-pointer;
+      }
+
+      & .wpcf7-list-item-label {
+        @apply text-white text-sm;
+
+        & a {
+          @apply text-white hover:underline;
+        }
+      }
+    }
+  }
+}
+
+/* ==========================================================================
+   Components
+   ========================================================================== */
+
+.button {
+}

@@ -1,0 +1,26 @@
+{
+  "name": "leungd/tatami",
+  "description": "Starter theme to build a Timber theme",
+  "type": "wordpress-theme",
+  "minimum-stability": "stable",
+  "authors": [
+    {
+      "email": "me@derekleung.ca",
+      "name": "leungd"
+    }
+  ],
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://wpackagist.org"
+    }
+  ],
+  "require": {
+    "timber/timber": "^2.1"
+  },
+  "config": {
+    "allow-plugins": {
+      "composer/installers": true
+    }
+  }
+}
