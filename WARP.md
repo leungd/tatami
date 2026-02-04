@@ -6,8 +6,8 @@ A foundational WordPress starter theme built with modern development tools inclu
 
 **Technology Stack:**
 - WordPress 5.0+
-- PHP 7.4+
-- Timber/Twig templating engine
+- PHP 8.0+
+- Timber v2/Twig templating engine
 - Vite for asset bundling
 - Tailwind CSS v4 with typography plugin (CSS-first configuration)
 - ESLint + Prettier for code quality
