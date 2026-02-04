@@ -1,5 +1,24 @@
 {% extends "base.twig" %}
 
-{% block content %}{% endblock %}
-
-{% block modules %}{% endblock %}
+{% block content %}
+	<div class="fluid-grid py-10">
+		<div class="col-[content-start/content-end]">
+			{% if posts %}
+				{% for post in posts %}
+					<article class="mb-8">
+						<h2><a href="{{ post.link }}">{{ post.title }}</a></h2>
+						<p class="text-sm text-gray-500">{{ post.date }}</p>
+						<div class="prose">{{ post.preview }}</div>
+					</article>
+				{% endfor %}
+				{% if posts.pagination %}
+					<nav class="mt-8">
+						{{ posts.pagination }}
+					</nav>
+				{% endif %}
+			{% else %}
+				<p>No posts found.</p>
+			{% endif %}
+		</div>
+	</div>
+{% endblock %}

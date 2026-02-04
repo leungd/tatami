@@ -39,7 +39,6 @@ Desktop.ini
 
 # Composer
 composer.phar
-composer.lock
 
 # Package manager locks (keep pnpm-lock.yaml, ignore others)
 package-lock.json

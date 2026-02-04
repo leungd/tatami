@@ -16,7 +16,6 @@
    ========================================================================== */
 
 body {
-  background-color: #F3F3F3;
   overflow-x: hidden;
 }
 
@@ -102,89 +101,4 @@ html {
     --text-5xl: clamp(3rem, 2.4rem + 2.5vw, 4rem);
     --text-6xl: clamp(3.75rem, 3rem + 3vw, 5rem);
   }
-}
-
-/* ==========================================================================
-   Forms
-   ========================================================================== */
-
-.fieldGroups {
-  @apply grid grid-cols-2 gap-2;
-}
-
-.fieldGroup {
-  & p {
-    @apply mb-0;
-  }
-
-  &.-full {
-    @apply col-span-2;
-  }
-
-  &.-half {
-    @apply col-span-2 lg:col-span-1;
-  }
-
-  &.-h {
-    @apply absolute -left-[9999px] top-auto w-px h-px overflow-hidden;
-  }
-
-  & label {
-    @apply text-white;
-  }
-
-  & input {
-    @apply border-b border-white bg-transparent py-2 w-full;
-  }
-
-  & textarea {
-    @apply border-b border-white bg-transparent py-2 w-full;
-  }
-
-  & [type="submit"] {
-    @apply border-none w-auto inline-block cursor-pointer px-6 py-4 text-blue-600 bg-white/60 hover:bg-white hover:text-blue-600 transition-all duration-300 mt-6;
-  }
-}
-
-.wpcf7 {
-  & .wpcf7-form {
-    & br {
-      @apply hidden;
-    }
-
-    & .wpcf7-response-output {
-      @apply text-white mx-0 leading-snug;
-    }
-
-    & .wpcf7-not-valid-tip {
-      @apply text-white text-xs my-2 italic;
-    }
-  }
-
-  & .wpcf7-acceptance .wpcf7-list-item {
-    @apply m-0;
-
-    & label {
-      @apply flex items-start cursor-pointer;
-
-      & input[type="checkbox"] {
-        @apply w-auto mr-2 mt-1 cursor-pointer;
-      }
-
-      & .wpcf7-list-item-label {
-        @apply text-white text-sm;
-
-        & a {
-          @apply text-white hover:underline;
-        }
-      }
-    }
-  }
-}
-
-/* ==========================================================================
-   Components
-   ========================================================================== */
-
-.button {
 }

@@ -6,40 +6,71 @@ A foundational WordPress starter theme built with modern development tools.
 
 - **Timber/Twig** - Template engine for clean, maintainable templates
 - **Vite** - Fast development server and optimized production builds
-- **Tailwind CSS** - Utility-first CSS framework with typography plugin
+- **Tailwind CSS 4** - Utility-first CSS framework with typography plugin
 - **Modern JavaScript** - ES modules support with Vite
 
 ## Requirements
 
-- PHP 7.4+
+- PHP 8.0+
 - WordPress 5.0+
 - Composer
-- Node.js & npm/yarn
-- Timber plugin
+- Node.js & pnpm
 
 ## Installation
 
 1. Clone or copy this theme into your WordPress themes directory
 2. Install PHP dependencies: `composer install`
-3. Install JavaScript dependencies: `npm install` or `yarn install`
-4. Install and activate the Timber plugin
+3. Install JavaScript dependencies: `pnpm install`
 
 ## Development
 
 Start the Vite development server:
 ```bash
-npm run dev
+pnpm dev
 ```
 
 Build for production:
 ```bash
-npm run build
+pnpm build
+```
+
+Lint JavaScript:
+```bash
+pnpm lint
+```
+
+Format code:
+```bash
+pnpm format
 ```
 
 ## Configuration
 
 ### Tailwind
-Customize Tailwind in `tailwind.config.js`. Add your brand colors, extend the default theme, and configure safelist patterns for dynamic classes.
+Tailwind 4 uses CSS-based configuration. Customize the theme in `src/css/tailwind.css` using `@theme` directives. Brand colors, spacing, and other design tokens are configured directly in the CSS file.
+
+### Fluid Grid System
+
+The theme includes a 12-column fluid grid system (`.fluid-grid`) with named grid lines for flexible layout control:
+
+```html
+<div class="fluid-grid">
+    <div class="col-[content-start/content-end]">Full content width</div>
+    <div class="col-[col-3/col-10]">Custom column span</div>
+    <div class="col-[full-start/full-end]">Full bleed</div>
+</div>
+```
+
+Helper classes: `.span-content`, `.span-md`, `.span-lg`, `.span-xl`, `.span-full`
+
+### Vite Integration
+
+Vite is integrated via a custom WordPress plugin in `vite.config.js` that:
+- Writes a `build/hot` file when the dev server is running
+- Cleans up the hot file on server stop
+- Triggers full-page reload on `.php` and `.twig` file changes
+
+The `lib/Vite.lib.php` class provides `asset()`, `css()`, `img()`, and `enqueue_module()` methods for resolving Vite-built assets in WordPress.
 
 ### Theme Files
 
@@ -56,9 +87,9 @@ Customize Tailwind in `tailwind.config.js`. Add your brand colors, extend the de
 - `views/archive.twig` - Archive/blog template
 - `views/search.twig` - Search results template
 - `views/404.twig` - 404 error template
-- `views/header.twig` - Site header with navigation
+- `views/header.twig` - Site header
 - `views/footer.twig` - Site footer
-- `views/menu.twig` - Menu component with dropdowns
+- `views/partials/menu.twig` - Menu component with dropdowns
 - `views/partials/` - Reusable template partials
 
 ## Customization
@@ -77,18 +108,15 @@ Add custom Twig filters in the `add_to_twig()` method in `lib/Tatami.lib.php`.
 
 ## Theme Options
 
-This theme is designed to work with ACF (Advanced Custom Fields) options pages. Configured options are available in Twig templates via `{{ options }}`.
+This theme is designed to work with ACF (Advanced Custom Fields) options pages. Configured options are available in Twig templates via `{{ options }}`. ACF is optional — the theme gracefully handles its absence.
 
 ## Assets
 
 ### Styles
-Main stylesheet: `src/scss/main.scss`
+Main stylesheet: `src/css/tailwind.css`
 
 ### Scripts
 Main JavaScript: `src/js/main.js`
-
-### Images
-Place images in `src/img/` - they'll be processed by Vite.
 
 ## License
 

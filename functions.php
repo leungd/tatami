@@ -1,21 +1,20 @@
 <?php
 /**
- * Timber starter-theme
- * https://github.com/timber/starter-theme
+ * Tatami Theme
  *
- * @package WordPress
- * @subpackage Timber
- * @since Timber 0.1
+ * @package  WordPress
+ * @subpackage  Tatami
  */
 
 require_once __DIR__ . '/vendor/autoload.php';
-require_once(__DIR__ . '/lib/Vite.lib.php');
-require_once(__DIR__ . '/lib/Theme.lib.php');
-require_once(__DIR__ . '/lib/Tatami.lib.php');
+require_once __DIR__ . '/lib/Vite.lib.php';
+require_once __DIR__ . '/lib/Theme.lib.php';
+require_once __DIR__ . '/lib/Tatami.lib.php';
 
 Timber\Timber::init();
 
 // Sets the directories (inside your theme) to find .twig files.
-Timber::$dirname = [ 'templates', 'views' ];
+Timber::$dirname = ['views'];
 
 new TatamiTheme();
+new Theme();

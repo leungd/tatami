@@ -1,8 +1,11 @@
+<!DOCTYPE html>
 <html {{ site.language_attributes }}>
 
 	{% block head %}
 		{% include 'partials/head.twig' %}
 	{% endblock %}
+
+	{% set tag = tag|default('div') %}
 
 	<body class="{{body_class}}">
 
@@ -23,8 +26,10 @@
             } %}
 				{% endblock %}
 				{% block content %}
-					<div class="grid py-10 grid-cols-layout sm:gap-10">
-						Sorry, no content
+					<div class="fluid-grid py-10">
+						<div class="col-[content-start/content-end]">
+							Sorry, no content
+						</div>
 					</div>
 				{% endblock %}
 				{% block modules %}{% endblock %}
