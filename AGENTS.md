@@ -69,7 +69,7 @@ src/js/main.js         → JS entry point — imports CSS, initializes modules
 ### Add a page template
 1. Create `page-{slug}.twig` in `views/` — `page.php` auto-resolves it by slug
 2. If the page needs custom context (queries, ACF fields), add logic in `page.php` with a slug check
-3. Extend `base.twig` and override the `body` or `content` block
+3. Extend `base.twig` and override the `content` block
 
 ### Add a reusable module
 1. Create `views/modules/{name}.twig`
@@ -137,8 +137,8 @@ All Tailwind configuration lives in `src/css/tailwind.css`. Key directives:
 
 ### Fluid grid system
 The theme includes a custom `.fluid-grid` — a 12-column CSS Grid with named lines:
-- `.span-md`, `.span-lg`, `.span-xl`, `.span-full` — responsive column spans
 - Grid lines: `full-start`, `content-start`, `col-1`–`col-12`, `content-end`, `full-end`
+- Place items using arbitrary grid-column values: `col-[content-start/content-end]`, `col-[col-3/col-10]`, `col-[full-start/full-end]`
 - Use the grid for page-level layout. Use Tailwind's `grid` and `flex` for component-level layout.
 
 ### Fluid typography
@@ -168,6 +168,10 @@ Write component styles in `src/css/tailwind.css` using native CSS nesting. Prefe
 - Access ACF fields via: `{{ post.meta('field_name') }}` or `{{ options.field_name }}`
 - Use Twig filters for display logic: `{{ post.date | date('F j, Y') }}`
 - Never put PHP logic in Twig — if you need data transformation, do it in the PHP context
+
+## Navigation
+
+Build a single `<nav>` structure that works mobile-first and adapts to the desktop design via CSS/JS. Never create separate mobile and desktop nav elements with duplicate markup — one nav, progressively enhanced with responsive styles and toggling behavior. The mobile menu (hamburger, slide-out, overlay, etc.) operates on the same underlying `<nav>` and menu items.
 
 ## JavaScript rules
 

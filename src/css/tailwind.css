@@ -46,40 +46,6 @@ body {
   width: 100%;
 }
 
-.span-content .span-md,
-.span-lg,
-.span-xl {
-  grid-column: content;
-}
-
-.span-full {
-  grid-column: full;
-}
-
-@variant md {
-  .span-md {
-    grid-column: col-3 / span 8;
-  }
-  .span-lg {
-    grid-column: col-2 / span 10;
-  }
-  .span-xl {
-    grid-column: col-1 / span 12;
-  }
-}
-
-@variant lg {
-  .span-md {
-    grid-column: col-4 / span 6;
-  }
-  .span-lg {
-    grid-column: col-3 / span 8;
-  }
-  .span-xl {
-    grid-column: col-2 / span 10;
-  }
-}
-
 /* ==========================================================================
    Typography
    ========================================================================== */

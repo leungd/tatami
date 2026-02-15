@@ -1,8 +1,10 @@
-{% extends "page.twig" %}
+{% extends "base.twig" %}
 
-{% block body %}
-	<article class="col-[main-start/main-end]">
-		<p>Sorry, we couldn't find what you're looking for.</p>
-		<a href="{{ site.home_url }}">Return to Home</a>
-	</article>
+{% block content %}
+	<div class="py-16 fluid-grid">
+		<div class="col-[content-start/content-end]">
+			<p>Sorry, we couldn't find what you're looking for.</p>
+			<a href="{{ site.home_url }}">Return to Home</a>
+		</div>
+	</div>
 {% endblock %}
