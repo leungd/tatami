@@ -1,13 +1,13 @@
 {% extends "base.twig" %}
 
 {% block content %}
-	<div class="{% if post.content %}py-16{% endif %} fluid-grid">
-		<div class="col-[content-start/content-end]">
-			<div class="prose">
-				{{ post.content }}
-			</div>
-		</div>
-	</div>
+  <div class="fluid-grid">
+    <div class="col-[content-start/content-end]">
+      <div class="prose">
+        {{ post.content }}
+      </div>
+    </div>
+  </div>
 {% endblock %}
 
 {% block modules %}{% endblock %}

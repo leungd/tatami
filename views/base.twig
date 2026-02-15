@@ -19,14 +19,14 @@
 
 		<main id="main" role="main">
 
-			<{{tag}} class="flex flex-col max-w-full">
+			<{{tag}} class="flex flex-col gap-y-32 max-w-full">
 				{% block pageHeader %}
 					{% include 'partials/page-header.twig' with {
               title: title,
             } %}
 				{% endblock %}
 				{% block content %}
-					<div class="fluid-grid py-10">
+					<div class="fluid-grid py-16">
 						<div class="col-[content-start/content-end]">
 							Sorry, no content
 						</div>
