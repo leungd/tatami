@@ -61,7 +61,7 @@ The theme includes a 12-column fluid grid system (`.fluid-grid`) with named grid
 </div>
 ```
 
-Helper classes: `.span-content`, `.span-md`, `.span-lg`, `.span-xl`, `.span-full`
+Use Tailwind's arbitrary value syntax for grid column placement.
 
 ### Vite Integration
 
