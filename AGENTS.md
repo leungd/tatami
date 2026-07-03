@@ -22,6 +22,7 @@ Tatami is a WordPress starter theme. Each site built on it is a **derivative** �
 ```
 functions.php          → Bootstraps everything (autoload, init Timber, instantiate classes)
 lib/Tatami.lib.php     → TatamiTheme class (extends Timber\Site) — CPTs, taxonomies, context, hooks
+lib/Queries.lib.php    → TatamiQueries class — reusable Timber queries (recent posts, services, etc.)
 lib/Theme.lib.php      → Asset enqueueing via Vite integration
 lib/Vite.lib.php       → Vite ↔ WordPress bridge (dev server detection, manifest reading)
 views/                 → All Twig templates
@@ -57,6 +58,12 @@ src/js/main.js         → JS entry point — imports CSS, initializes modules
 - Everything else (JS, CSS, Twig, JSON, YAML): 2 spaces
 - Defined in `.editorconfig` — respect it
 
+### Comments
+Comment to explain context, never to narrate the change. A comment should read the same whether the code was written today or a year ago — it explains *why the code is the way it is* (a non-obvious constraint, a gotcha, a deliberate-looking-wrong decision), not what a given edit did.
+- **Don't** reference the task, the fix, or the prior state: no `// changed to…`, `// now uses…`, `// added guard for…`, `// fix:…`, `// previously we…`. Git records what changed and when; the file shouldn't.
+- **Do** write comments that stand on their own and stay true independent of history: `// ACF is optional — this path runs when the plugin is absent`.
+- When in doubt, prefer no comment over a changelog comment. If the code needs explaining, explain the code, not the diff.
+
 ## How to do common tasks
 
 ### Add a custom post type
@@ -75,11 +82,42 @@ src/js/main.js         → JS entry point — imports CSS, initializes modules
 1. Create `views/modules/{name}.twig`
 2. Include it from page templates: `{% include 'modules/{name}.twig' with { data: someData } %}`
 3. Keep modules self-contained — they receive data via context, never query directly
+4. Guard on the data so the module no-ops when it's absent (`{% if services %}…{% endif %}`). This lets the same module be dropped into any template; it only renders where the router supplied data.
+
+### Add a reusable query
+Reusable post queries live as **static methods on `TatamiQueries`** (`lib/Queries.lib.php`), never inline in router files. This keeps query logic in one place, lets multiple routers share it (e.g. `front-page.php` and `single.php` both fetch services), and keeps the `TatamiTheme` Site class focused on setup rather than data fetching.
+```php
+// lib/Queries.lib.php
+public static function recent_posts(int $exclude_id = 0, int $count = 3) {
+    $args = ['post_type' => 'post', 'posts_per_page' => $count, 'orderby' => 'date', 'order' => 'DESC'];
+    if ($exclude_id) {
+        $args['post__not_in'] = [$exclude_id];
+    }
+    return Timber::get_posts($args);
+}
+```
+```php
+// router file — front-page.php, single.php, etc.
+$context['blog_posts'] = TatamiQueries::recent_posts($post->ID); // exclude current post
+```
+Rules:
+- One method per logical query; name it for intent (`services()`, `recent_posts()`), not the post type.
+- Accept parameters for the variations callers actually need (count, exclusions) with sensible defaults — don't fork into near-duplicate methods.
+- Routers stay thin: they call a helper and assign to context, nothing more.
 
 ### Add a Twig macro
 1. Create or edit files in `views/macros/`
 2. Import in templates: `{% from 'macros/image.twig' import acf_image %}`
 3. Use macros for repeated HTML patterns that need parameters (images, buttons, cards)
+
+**Card-like patterns have three shapes — pick by how content is supplied:**
+- Content fully described by parameters (title, excerpt, image, url) → **macro**
+- Wraps arbitrary inner markup (a slot/`children` equivalent) → **`embed`** a partial with `{% block %}`s
+- The surrounding grid/list that loops and renders the cards → **module**
+
+Extract the *markup*, never the styling. A long utility string is a signal to reach
+for one of the above, not to write a CSS class — the utilities stay just as visible,
+only in one place.
 
 ### Add global context
 Edit `add_to_context()` in `lib/Tatami.lib.php`. Available everywhere in Twig:
@@ -87,12 +125,12 @@ Edit `add_to_context()` in `lib/Tatami.lib.php`. Available everywhere in Twig:
 - `{{ menu }}` — primary nav menu
 - `{{ options }}` — ACF options page fields (if ACF active)
 
-**Keep `add_to_context()` lean.** Only put data here that is truly needed on every page (menu, site, options). Page-specific queries belong in the PHP router file for that page:
+**Keep `add_to_context()` lean.** Only put data here that is truly needed on every page (menu, site, options). Page-specific queries belong in the PHP router file for that page, and the query itself lives in `TatamiQueries` (see "Add a reusable query" below):
 ```php
-// GOOD — query in the router file that needs it
+// GOOD — router calls a named query helper
 // front-page.php
-$context['services'] = Timber::get_posts([...]);
-$context['recent_posts'] = Timber::get_posts([...]);
+$context['services']   = TatamiQueries::services();
+$context['blog_posts'] = TatamiQueries::recent_posts();
 
 // BAD — querying in add_to_context() runs on every request including 404s
 public function add_to_context($context) {
@@ -145,15 +183,27 @@ The theme includes a custom `.fluid-grid` — a 12-column CSS Grid with named li
 Custom `clamp()`-based type scale defined as CSS variables (`--text-xs` through `--text-6xl`). Applied to headings in base styles. Use these for consistent responsive sizing.
 
 ### Component styles
-Write component styles in `src/css/tailwind.css` using native CSS nesting. Prefer Tailwind utilities in Twig templates for one-off styling. Use CSS classes for:
-- Complex components that would be unreadable as utility strings
-- States that need CSS animations/transitions
-- Third-party plugin styling overrides (e.g., Contact Form 7)
+Prefer Tailwind utilities in Twig templates. When a pattern repeats, extract the
+**markup** (macro, `embed`, or module — see "Add a Twig macro") rather than the styling.
+A long utility string means extract a Twig fragment, never mint a CSS class.
+
+Write component styles in `src/css/tailwind.css` (native CSS nesting) only for things
+templating can't solve:
+- Styling markup you don't author — WYSIWYG/`the_content()` output, Gutenberg blocks,
+  third-party plugin overrides (e.g., Contact Form 7)
+- CSS features utilities can't express cleanly — complex keyframe animations, intricate
+  `:nth-child`/sibling logic, pseudo-element content
+- Design-system primitives the theme already owns this way (`.fluid-grid`, fluid type scale)
+- Avoid `@apply` as a reuse strategy — extract Twig fragments instead. The remaining
+  legitimate use is third-party/plugin overrides; if you must `@apply` there, keep it in
+  the main `@import "tailwindcss"` graph (`src/css/tailwind.css` or files it imports), or
+  it fails in v4 with "unknown utility" unless the file pulls in the theme via `@reference`.
 
 ## PHP rules
 
 - PHP 8.0+ syntax — use typed properties, union types, match expressions, named arguments where appropriate
 - All theme logic in `lib/` classes, never in `functions.php` (it's just a bootstrapper)
+- Reusable post queries go in `TatamiQueries` (`lib/Queries.lib.php`) as static methods — never inline `Timber::get_posts([...])` in a router file when more than one place needs it. Add new lib files to the `require_once` list in `functions.php`.
 - ACF is an optional dependency — always guard with `function_exists('get_fields')` or similar
 - Never use `wp_head`/`wp_footer` action hooks for inline styles or scripts — use the Vite pipeline
 - Register all hooks in class constructors
@@ -163,7 +213,8 @@ Write component styles in `src/css/tailwind.css` using native CSS nesting. Prefe
 
 - All templates extend `base.twig` (except partials, macros, and modules)
 - Use blocks for overridable sections: `{% block content %}{% endblock %}`
-- Use `{% include %}` for partials and modules, `{% from %}` for macros
+- Use `{% include %}` for partials and modules, `{% from %}` for macros, and
+  `{% embed %}` for fragments that wrap caller-supplied markup (cards with slots, callouts)
 - Access post data via Timber objects: `{{ post.title }}`, `{{ post.content }}`, `{{ post.thumbnail }}`
 - Access ACF fields via: `{{ post.meta('field_name') }}` or `{{ options.field_name }}`
 - Use Twig filters for display logic: `{{ post.date | date('F j, Y') }}`
@@ -246,4 +297,4 @@ When building a new site on Tatami:
 5. Build page templates in `views/` following the naming conventions above
 6. Extract reusable sections into `views/modules/` and `views/partials/`
 7. Add JS interactivity in `src/js/main.js` using the module pattern
-8. Query and pass data to templates via PHP context in the appropriate router file
+8. Add reusable queries to `TatamiQueries` (`lib/Queries.lib.php`), then call them from the appropriate router file and assign to context
