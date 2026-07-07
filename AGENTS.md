@@ -283,7 +283,7 @@ The base ships a semantic skeleton in `header.twig` (`<nav aria-label="Primary">
 - Comments are disabled site-wide in the base; a site that genuinely needs them removes the three comment filters and the admin-menu removal in `Tatami\Site::__construct()`.
 - Author archives return 404 (`Tatami\Site::disable_author_archives()`) — unused on client sites and an enumeration vector. A site that needs them removes that hook and uses `Timber::get_user()`.
 - Password-protected content renders Timber's password form (filter enabled in `Tatami\Site::__construct()`).
-- Front-end titles are entity-decoded (`Tatami\Site::decode_title_entities()` on `the_title`) so Twig's autoescape encodes them exactly once — WP's default filter chain pre-encodes ampersands, which would otherwise double-encode.
+- Front-end titles are entity-decoded (`Tatami\Site::decode_title_entities()`, hooked on `the_title` at `template_redirect` time) so Twig's autoescape encodes them exactly once — WP's default filter chain pre-encodes ampersands and emits numeric references for quotes/dashes, which would otherwise double-encode. The hook is deliberately scoped to front-end template rendering; REST and feed output keep WP's encoding.
 
 ## Build & dev workflow
 
