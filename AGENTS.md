@@ -21,13 +21,13 @@ Tatami is a WordPress starter theme. Each site built on it is a **derivative** �
 
 ```
 functions.php          → Bootstraps everything (autoload, init Timber, instantiate classes)
-lib/Tatami.lib.php     → TatamiTheme class (extends Timber\Site) — CPTs, taxonomies, context, hooks
-lib/Queries.lib.php    → TatamiQueries class — reusable Timber queries (recent posts, services, etc.)
-lib/Theme.lib.php      → Asset enqueueing via Vite integration
-lib/Vite.lib.php       → Vite ↔ WordPress bridge (dev server detection, manifest reading)
+lib/Site.lib.php       → Tatami\Site class (extends Timber\Site) — CPTs, taxonomies, context, hooks, hardening
+lib/Queries.lib.php    → Tatami\Queries class — reusable Timber queries (featured images, services, etc.)
+lib/Assets.lib.php     → Asset enqueueing via Vite integration
+lib/Vite.lib.php       → Tatami\Vite — Vite ↔ WordPress bridge (dev server detection, manifest reading)
 views/                 → All Twig templates
   base.twig            → Root HTML shell — all page templates extend this
-  partials/            → Reusable fragments (head, menu, pagination, page-header)
+  partials/            → Reusable fragments (head, page-header, pagination, post-list)
   macros/              → Twig macros for repeated patterns (images, nav items)
   modules/             → Self-contained content sections (services grid, map, etc.)
 src/css/tailwind.css   → Tailwind config + custom utilities + component styles
@@ -39,7 +39,7 @@ src/js/main.js         → JS entry point — imports CSS, initializes modules
 1. WordPress routes request → PHP template file (e.g., `page.php`)
 2. PHP file builds Timber context, calls `Timber::render('page.twig', $context)`
 3. Twig template extends `base.twig`, overrides blocks with page-specific content
-4. Global context (menu, site, ACF options) injected via `add_to_context()` in `Tatami.lib.php`
+4. Global context (menu, site, ACF options) injected via `add_to_context()` in `Site.lib.php`
 
 ## File conventions
 
@@ -67,7 +67,7 @@ Comment to explain context, never to narrate the change. A comment should read t
 ## How to do common tasks
 
 ### Add a custom post type
-1. Register in `lib/Tatami.lib.php` → `register_post_types()` method
+1. Register in `lib/Site.lib.php` → `register_post_types()` method
 2. Always set `'show_in_rest' => true` for block editor and REST API support
 3. Create `single-{post_type}.twig` in `views/`
 4. If you need archive pages, create `archive-{post_type}.twig`
@@ -78,6 +78,18 @@ Comment to explain context, never to narrate the change. A comment should read t
 2. If the page needs custom context (queries, ACF fields), add logic in `page.php` with a slug check
 3. Extend `base.twig` and override the `content` block
 
+### Front page & posts page (house routing pattern)
+
+The standard setup is a static "Home" page + a "Blog" posts page assigned under Settings → Reading.
+
+- The front page renders through `front-page.php` → `front-page.twig` (WP hierarchy name).
+- **The posts page never routes through `page.php`** — WordPress serves it via `home.php`. `home.php` participates in the page-template convention: it resolves `page-{slug}.twig` from the assigned Blog page's slug (so a site calling it "News" gets `page-news.twig`), sets `post` to the Blog page (its title/ACF fields drive the header), and falls back to `home.twig` → `index.twig`.
+- Naming rule: the front page uses `front-page.twig`; **every other admin-created page — including the posts page — uses `page-{slug}.twig`**.
+
+### Featured images (house tool)
+
+Routers for singular views assign `$context['featured_image'] = Tatami\Queries::featured_image_with_fallback($post);` — a Timber image object with parent fallback (a page without a thumbnail inherits its parent's). Templates read `featured_image.src`, `featured_image.alt`, `featured_image.width`, `featured_image.height`; `partials/page-header.twig` demonstrates consumption as an optional hero. Derivative heroes build on this key. (Older derivatives consume `featured_image_src`/`featured_image_alt` — a breaking difference; don't retrofit them.)
+
 ### Add a reusable module
 1. Create `views/modules/{name}.twig`
 2. Include it from page templates: `{% include 'modules/{name}.twig' with { data: someData } %}`
@@ -85,9 +97,11 @@ Comment to explain context, never to narrate the change. A comment should read t
 4. Guard on the data so the module no-ops when it's absent (`{% if services %}…{% endif %}`). This lets the same module be dropped into any template; it only renders where the router supplied data.
 
 ### Add a reusable query
-Reusable post queries live as **static methods on `TatamiQueries`** (`lib/Queries.lib.php`), never inline in router files. This keeps query logic in one place, lets multiple routers share it (e.g. `front-page.php` and `single.php` both fetch services), and keeps the `TatamiTheme` Site class focused on setup rather than data fetching.
+Reusable post queries live as **static methods on `Tatami\Queries`** (`lib/Queries.lib.php`), never inline in router files. This keeps query logic in one place, lets multiple routers share it (e.g. `front-page.php` and `single.php` both fetch services), and keeps the `Tatami\Site` class focused on setup rather than data fetching.
 ```php
 // lib/Queries.lib.php
+namespace Tatami;
+
 public static function recent_posts(int $exclude_id = 0, int $count = 3) {
     $args = ['post_type' => 'post', 'posts_per_page' => $count, 'orderby' => 'date', 'order' => 'DESC'];
     if ($exclude_id) {
@@ -98,7 +112,7 @@ public static function recent_posts(int $exclude_id = 0, int $count = 3) {
 ```
 ```php
 // router file — front-page.php, single.php, etc.
-$context['blog_posts'] = TatamiQueries::recent_posts($post->ID); // exclude current post
+$context['blog_posts'] = Tatami\Queries::recent_posts($post->ID); // exclude current post
 ```
 Rules:
 - One method per logical query; name it for intent (`services()`, `recent_posts()`), not the post type.
@@ -120,17 +134,17 @@ for one of the above, not to write a CSS class — the utilities stay just as vi
 only in one place.
 
 ### Add global context
-Edit `add_to_context()` in `lib/Tatami.lib.php`. Available everywhere in Twig:
+Edit `add_to_context()` in `lib/Site.lib.php`. Available everywhere in Twig:
 - `{{ site }}` — Timber site object
 - `{{ menu }}` — primary nav menu
 - `{{ options }}` — ACF options page fields (if ACF active)
 
-**Keep `add_to_context()` lean.** Only put data here that is truly needed on every page (menu, site, options). Page-specific queries belong in the PHP router file for that page, and the query itself lives in `TatamiQueries` (see "Add a reusable query" below):
+**Keep `add_to_context()` lean.** Only put data here that is truly needed on every page (menu, site, options). Page-specific queries belong in the PHP router file for that page, and the query itself lives in `Tatami\Queries` (see "Add a reusable query" below):
 ```php
 // GOOD — router calls a named query helper
 // front-page.php
-$context['services']   = TatamiQueries::services();
-$context['blog_posts'] = TatamiQueries::recent_posts();
+$context['services']   = Tatami\Queries::services();
+$context['blog_posts'] = Tatami\Queries::recent_posts();
 
 // BAD — querying in add_to_context() runs on every request including 404s
 public function add_to_context($context) {
@@ -203,7 +217,8 @@ templating can't solve:
 
 - PHP 8.0+ syntax — use typed properties, union types, match expressions, named arguments where appropriate
 - All theme logic in `lib/` classes, never in `functions.php` (it's just a bootstrapper)
-- Reusable post queries go in `TatamiQueries` (`lib/Queries.lib.php`) as static methods — never inline `Timber::get_posts([...])` in a router file when more than one place needs it. Add new lib files to the `require_once` list in `functions.php`.
+- All `lib/` classes live in the `Tatami\` namespace
+- Reusable post queries go in `Tatami\Queries` (`lib/Queries.lib.php`) as static methods — never inline `Timber::get_posts([...])` in a router file when more than one place needs it. Add new lib files to the `require_once` list in `functions.php`.
 - ACF is an optional dependency — always guard with `function_exists('get_fields')` or similar
 - Never use `wp_head`/`wp_footer` action hooks for inline styles or scripts — use the Vite pipeline
 - Register all hooks in class constructors
@@ -219,14 +234,17 @@ templating can't solve:
 - Access ACF fields via: `{{ post.meta('field_name') }}` or `{{ options.field_name }}`
 - Use Twig filters for display logic: `{{ post.date | date('F j, Y') }}`
 - Never put PHP logic in Twig — if you need data transformation, do it in the PHP context
-- `pnpm format` formats all Twig templates except `views/base.twig` — the Twig plugin's parser
-  cannot handle its dynamic `<{{tag}}>` wrapper (listed in `.prettierignore`). Format that file
-  by hand: 2-space indent, same as every other template. Any new template using a dynamic
-  element name must also be added to `.prettierignore`.
+- `pnpm format` formats all Twig templates except `views/base.twig` and `views/header.twig`,
+  listed in `.prettierignore` — the Twig plugin's parser cannot handle `base.twig`'s dynamic
+  `<{{tag}}>` wrapper, nor `header.twig`'s `{% if %}` tags inside an element's attribute list.
+  Format those files by hand: 2-space indent, same as every other template. Any new template
+  hitting either pattern must also be added to `.prettierignore`.
 
 ## Navigation
 
 Build a single `<nav>` structure that works mobile-first and adapts to the desktop design via CSS/JS. Never create separate mobile and desktop nav elements with duplicate markup — one nav, progressively enhanced with responsive styles and toggling behavior. The mobile menu (hamburger, slide-out, overlay, etc.) operates on the same underlying `<nav>` and menu items.
+
+The base ships a semantic skeleton in `header.twig` (`<nav aria-label="Primary">`, `menu.items` loop, `aria-current="page"` on the current item, `rel="noopener noreferrer"` on `_blank` targets). Sites needing dropdown submenus use the disclosure pattern: a real `<button>` with `aria-expanded` (toggled in JS) + `aria-controls`, an `sr-only`/visible label (not `title=`), Escape to close, `aria-hidden="true" focusable="false"` on decorative SVGs. Do not use `aria-haspopup` for plain disclosure submenus.
 
 ## JavaScript rules
 
@@ -246,14 +264,24 @@ Build a single `<nav>` structure that works mobile-first and adapts to the deskt
 - Focus management for dynamic content (mobile menus, modals)
 - Keyboard navigation support (Escape to close, Tab trapping)
 - `<details>`/`<summary>` for native accordion behavior where possible
+- **Contrast is a token-time decision:** when defining `@theme` brand colors, every foreground/background pairing the design will use must meet WCAG AA (4.5:1 text, 3:1 large text/UI components). Record the intended pairings as comments next to the tokens. Never introduce a text-on-brand combination without checking it.
+- **Focus visibility:** never remove focus outlines without a replacement; every interactive element needs a visible `:focus-visible` state with ≥3:1 contrast against its surroundings.
+- **Motion:** wrap all non-essential animation in `motion-safe:` (Tailwind) or `@media (prefers-reduced-motion: no-preference)`. No autoplaying movement > 5s without a pause control. (The base ships a global reduced-motion reset in `tailwind.css`.)
+- **State is programmatic, not just visual:** any UI state shown by color/style (current nav item, selected tab, open accordion, current page) must also be expressed in ARIA (`aria-current`, `aria-expanded`, `aria-selected`).
+- **Images:** every `<img>` gets `alt` — from the media-library alt field for content images, `alt=""` for decorative; inline decorative SVGs get `aria-hidden="true" focusable="false"`.
+- **Forms:** every control gets a programmatic `<label>` (not placeholder-as-label); errors are announced (`aria-describedby` + `role="alert"` or a live region).
+- **Touch targets:** interactive targets ≥ 24×24 CSS px (44×44 preferred for primary mobile controls).
+- **Language:** all user-facing strings go through `__('…', 'tatami')` in PHP and `{{ __('…', 'tatami') }}` in Twig (return-based — never `_e()` in Twig); no concatenated sentence-building in templates (use `|format`).
 
 ## Security
 
-- SVG uploads are allowed (MIME type registered) — but only for admin users
-- Always escape output in Twig: `{{ variable }}` auto-escapes; use `{{ variable | raw }}` only for trusted HTML (WYSIWYG fields)
-- ACF fields that accept HTML should use `| raw` — plain text fields should not
-- Disable XML-RPC pingbacks on client sites
-- Disable comments site-wide unless explicitly needed
+- Twig autoescaping is ON (`autoescape: 'html'`, set in `Tatami\Site::set_twig_environment_options()`): `{{ variable }}` escapes for HTML. Use `| raw` only for trusted HTML — `post.content`, `post.excerpt` (WYSIWYG output), and `site.language_attributes`. WordPress functions that echo (`function('wp_footer')`, `{% do action(...) %}`) bypass escaping; their output is WP's responsibility.
+- ACF fields that accept HTML should use `| raw` — plain text fields must not.
+- SVG uploads are allowed for administrators only (`manage_options` gate in `Tatami\Site::add_svg_mime_type()`). Pair with a sanitizer plugin (e.g. Safe SVG) on client sites.
+- XML-RPC pingbacks are disabled in the base (`Tatami\Site::disable_xmlrpc_pingbacks()`).
+- Comments are disabled site-wide in the base; a site that genuinely needs them removes the three comment filters and the admin-menu removal in `Tatami\Site::__construct()`.
+- Author archives return 404 (`Tatami\Site::disable_author_archives()`) — unused on client sites and an enumeration vector. A site that needs them removes that hook and uses `Timber::get_user()`.
+- Password-protected content renders Timber's password form (filter enabled in `Tatami\Site::__construct()`).
 
 ## Build & dev workflow
 
@@ -271,13 +299,13 @@ pnpm format           # Prettier (JS, CSS, Twig)
 - **Dev:** Vite writes `build/hot` file → `Vite.lib.php` detects it → assets served from dev server with HMR
 - **Prod:** Vite generates `build/.vite/manifest.json` → `Vite.lib.php` reads it → WordPress enqueues hashed assets
 - Entry point: `src/js/main.js` (CSS imported here, Vite extracts it automatically)
-- `lib/Theme.lib.php` enqueues both the extracted CSS and the JS module via `wp_enqueue_*`
+- `lib/Assets.lib.php` enqueues both the extracted CSS and the JS module via `wp_enqueue_*`
 
 ### Before committing
 1. Run `pnpm build` to ensure production build succeeds
 2. Run `pnpm lint` and `pnpm format`
-3. Never commit `node_modules/`, `vendor/`, or `build/hot`
-4. The `build/` directory and `acf-json/` should be committed for deployment
+3. Never commit `node_modules/`, `vendor/`, or anything under `build/`
+4. `build/` is never committed — Tatami is a base theme; sites build assets at deploy time (`pnpm build`). A missing build fails soft: the site renders unstyled and logs the error. `acf-json/` should be committed.
 
 ## Things to avoid
 
@@ -291,14 +319,23 @@ pnpm format           # Prettier (JS, CSS, Twig)
 - **No `echo` in PHP template files** — all output goes through Twig
 - **No npm or yarn** — this project uses pnpm exclusively
 
+## Definition of done (template work)
+
+Before calling any template work complete, load and eyeball — with `WP_DEBUG` on: the front page, the blog home *with more than one page of posts* (pagination must render), a category archive, a search with results and with none, and a 404. Run one keyboard-only pass: skip link, full nav including any submenus, focus visible throughout.
+
+## Doc integrity
+
+AGENTS.md must describe the repo as it is. If a change makes a statement in AGENTS.md false (files, behavior, versions, security posture), updating AGENTS.md is part of the change.
+
 ## Extending for a new site
 
 When building a new site on Tatami:
 1. Copy the base theme to a new project
 2. Define brand colors and fonts in `src/css/tailwind.css` `@theme` block
-3. Register custom post types and taxonomies in `lib/Tatami.lib.php`
+3. Register custom post types and taxonomies in `lib/Site.lib.php`
 4. Set up ACF field groups — use `acf-json/` for version control (local JSON)
 5. Build page templates in `views/` following the naming conventions above
 6. Extract reusable sections into `views/modules/` and `views/partials/`
 7. Add JS interactivity in `src/js/main.js` using the module pattern
-8. Add reusable queries to `TatamiQueries` (`lib/Queries.lib.php`), then call them from the appropriate router file and assign to context
+8. Add reusable queries to `Tatami\Queries` (`lib/Queries.lib.php`), then call them from the appropriate router file and assign to context
+9. **Backport rule:** when site work reveals a fix that isn't site-specific (a11y helpers, Timber API corrections, structural CSS, security gating), flag it for backport to the base theme before the project wraps — keep a `BACKPORT.md` list in the site repo.

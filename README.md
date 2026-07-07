@@ -70,15 +70,16 @@ Vite is integrated via a custom WordPress plugin in `vite.config.js` that:
 - Cleans up the hot file on server stop
 - Triggers full-page reload on `.php` and `.twig` file changes
 
-The `lib/Vite.lib.php` class provides `asset()`, `css()`, `img()`, and `enqueue_module()` methods for resolving Vite-built assets in WordPress.
+The `lib/Vite.lib.php` class (`Tatami\Vite`) provides `asset()`, `css()`, and `enqueue_module()` methods for resolving Vite-built assets in WordPress.
 
 ### Theme Files
 
 #### Core PHP Files
 - `functions.php` - Main theme setup
-- `lib/Tatami.lib.php` - Theme functionality, Timber context, and custom functions
-- `lib/Theme.lib.php` - Asset enqueueing
+- `lib/Site.lib.php` - Theme functionality, Timber context, hardening (`Tatami\Site`)
+- `lib/Assets.lib.php` - Asset enqueueing (`Tatami\Assets`)
 - `lib/Vite.lib.php` - Vite integration for WordPress
+- `lib/Queries.lib.php` - Reusable Timber queries (`Tatami\Queries`)
 
 #### Template Files (Twig)
 - `views/base.twig` - Base template with HTML structure
@@ -89,22 +90,21 @@ The `lib/Vite.lib.php` class provides `asset()`, `css()`, `img()`, and `enqueue_
 - `views/404.twig` - 404 error template
 - `views/header.twig` - Site header
 - `views/footer.twig` - Site footer
-- `views/partials/menu.twig` - Menu component with dropdowns
 - `views/partials/` - Reusable template partials
 
 ## Customization
 
 ### Adding Custom Post Types
-Add your custom post types in the `register_post_types()` method in `lib/Tatami.lib.php`.
+Add your custom post types in the `register_post_types()` method in `lib/Site.lib.php`.
 
 ### Adding Custom Taxonomies
-Add your custom taxonomies in the `register_taxonomies()` method in `lib/Tatami.lib.php`.
+Add your custom taxonomies in the `register_taxonomies()` method in `lib/Site.lib.php`.
 
 ### Timber Context
-Modify the global Timber context in the `add_to_context()` method in `lib/Tatami.lib.php`. This is where you can add site-wide variables accessible in all Twig templates.
+Modify the global Timber context in the `add_to_context()` method in `lib/Site.lib.php`. This is where you can add site-wide variables accessible in all Twig templates.
 
 ### Custom Twig Filters
-Add custom Twig filters in the `add_to_twig()` method in `lib/Tatami.lib.php`.
+Add custom Twig filters in the `add_to_twig()` method in `lib/Site.lib.php`.
 
 ## Theme Options
 
