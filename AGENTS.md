@@ -11,7 +11,7 @@ Tatami is a WordPress starter theme. Each site built on it is a **derivative** �
 | CMS | WordPress 6.x | Classic theme (not FSE/block theme) |
 | Templating | Timber v2 / Twig | PHP files are thin routers; all markup lives in `views/` |
 | CSS | Tailwind CSS v4 | CSS-first config in `src/css/tailwind.css` — no `tailwind.config.js` |
-| Build | Vite 5 | Dev server with HMR, manifest-based production builds |
+| Build | Vite 8 | Dev server with HMR, manifest-based production builds |
 | Fields | ACF Pro | Optional dependency — theme must work without it |
 | PHP deps | Composer | Timber loaded via `vendor/autoload.php` |
 | JS deps | pnpm | Lockfile is `pnpm-lock.yaml` — never use npm or yarn |

@@ -14,7 +14,7 @@ $context['search_query'] = get_search_query();
 
 $post_type = isset($_GET['post_type']) ? sanitize_key($_GET['post_type']) : '';
 if ($post_type) {
-	$context['post_type'] = $post_type;
+    $context['post_type'] = $post_type;
 }
 
 $context['posts'] = Timber::get_posts();

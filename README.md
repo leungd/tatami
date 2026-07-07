@@ -12,7 +12,7 @@ A foundational WordPress starter theme built with modern development tools.
 ## Requirements
 
 - PHP 8.0+
-- WordPress 5.0+
+- WordPress 6.x
 - Composer
 - Node.js & pnpm
 
