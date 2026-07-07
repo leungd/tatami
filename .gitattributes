@@ -1,3 +1,0 @@
-# docs/ is base-theme process history (audits, plans, specs) — keep it out of
-# distributed archives (git archive); new-site copies delete it per AGENTS.md.
-docs/ export-ignore
