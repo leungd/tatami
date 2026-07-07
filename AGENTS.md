@@ -333,11 +333,12 @@ AGENTS.md must describe the repo as it is. If a change makes a statement in AGEN
 
 When building a new site on Tatami:
 1. Copy the base theme to a new project
-2. Define brand colors and fonts in `src/css/tailwind.css` `@theme` block
-3. Register custom post types and taxonomies in `lib/Site.lib.php`
-4. Set up ACF field groups — use `acf-json/` for version control (local JSON)
-5. Build page templates in `views/` following the naming conventions above
-6. Extract reusable sections into `views/modules/` and `views/partials/`
-7. Add JS interactivity in `src/js/main.js` using the module pattern
-8. Add reusable queries to `Tatami\Queries` (`lib/Queries.lib.php`), then call them from the appropriate router file and assign to context
-9. **Backport rule:** when site work reveals a fix that isn't site-specific (a11y helpers, Timber API corrections, structural CSS, security gating), flag it for backport to the base theme before the project wraps — keep a `BACKPORT.md` list in the site repo.
+2. Delete `docs/` — it's base-theme process history (audits, plans, specs), irrelevant to a site build
+3. Define brand colors and fonts in `src/css/tailwind.css` `@theme` block
+4. Register custom post types and taxonomies in `lib/Site.lib.php`
+5. Set up ACF field groups — use `acf-json/` for version control (local JSON)
+6. Build page templates in `views/` following the naming conventions above
+7. Extract reusable sections into `views/modules/` and `views/partials/`
+8. Add JS interactivity in `src/js/main.js` using the module pattern
+9. Add reusable queries to `Tatami\Queries` (`lib/Queries.lib.php`), then call them from the appropriate router file and assign to context
+10. **Backport rule:** when site work reveals a fix that isn't site-specific (a11y helpers, Timber API corrections, structural CSS, security gating), flag it for backport to the base theme before the project wraps — keep a `BACKPORT.md` list in the site repo.
