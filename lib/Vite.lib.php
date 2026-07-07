@@ -36,39 +36,63 @@ class Vite {
      * Check for the presence of a hot file and load the manifest.
      *
      * @return string|null The Vite client URL when running hot, null otherwise.
-     * @throws Exception
      */
     public static function init(): string|null
     {
-        static::$isHot = file_exists(static::hotFilePath());
+        // The hot file only means anything on a dev machine. A stale one —
+        // crashed dev server, or one that reached a server — must never put
+        // the site in hot mode, so hot detection is gated on environment.
+        $isDevEnvironment = in_array( wp_get_environment_type(), [ 'local', 'development' ], true );
+        static::$isHot    = $isDevEnvironment && file_exists( static::hotFilePath() );
 
-        // are we running hot?
         if (static::$isHot) {
             static::$server = file_get_contents(static::hotFilePath());
             return static::$server . '/@vite/client';
         }
 
-        // we must have a manifest file...
+        // Fail soft without a manifest: an unstyled page beats a fatal on
+        // every front-end request.
         if (!file_exists($manifestPath = static::buildPath() . '/.vite/manifest.json')) {
-            throw new \Exception('No Vite Manifest exists. Should hot server be running?');
+            error_log('Tatami: Vite manifest not found — run `pnpm build`, or start `pnpm dev` in a local environment.');
+            add_action('admin_notices', array(static::class, 'render_missing_manifest_notice'));
+            return null;
         }
 
         // store our manifest contents.
-        static::$manifest = json_decode(file_get_contents($manifestPath), true);
+        static::$manifest = json_decode(file_get_contents($manifestPath), true) ?: [];
 
         return null;
+    }
+
+    /**
+     * Whether assets can be resolved (dev server running or manifest loaded).
+     *
+     * @return bool
+     */
+    public static function ready(): bool
+    {
+        return static::$isHot || static::$manifest !== [];
+    }
+
+    /**
+     * Admin notice shown when no manifest was found.
+     *
+     * @return void
+     */
+    public static function render_missing_manifest_notice(): void
+    {
+        echo '<div class="notice notice-error"><p>Tatami: no Vite manifest found, so no theme assets are enqueued. Run <code>pnpm build</code>.</p></div>';
     }
 
     /**
      * Enqueue the Vite client module (dev server only).
      *
      * @return void
-     * @throws Exception
      */
     public static function enqueue_module(): void
     {
         // we only want to continue if we have a client.
-        if (!$client = Vite::init()) {
+        if (!$client = static::init()) {
             return;
         }
 
@@ -76,7 +100,7 @@ class Vite {
         wp_enqueue_script('vite-client', $client, [], null);
 
         // update html script type to module
-        Vite::script_type_module('vite-client');
+        static::script_type_module('vite-client');
     }
 
     /**
@@ -85,7 +109,7 @@ class Vite {
      * @param $asset
      *
      * @return string
-     * @throws Exception
+     * @throws \Exception
      */
     public static function asset($asset): string
     {
@@ -143,37 +167,27 @@ class Vite {
     }
 
     /**
-     * Return URI path to an image.
-     *
-     * @param $img
-     *
-     * @return string|null
-     */
-    public static function img($img): ?string
-    {
-        try {
-            $asset = 'src/img/' . ltrim($img, '/');
-            return static::asset($asset);
-        } catch (\Exception $e) {
-            return null;
-        }
-    }
-
-    /**
      * Update html script type to module.
+     *
+     * Mutates the tag WordPress built rather than replacing it, so attributes
+     * added by core or plugins (CSP nonces, integrity) survive.
      *
      * @param string $scriptHandle
      * @return void
      */
     public static function script_type_module(string $scriptHandle): void
     {
-        add_filter('script_loader_tag', function ($tag, $handle, $src) use ($scriptHandle) {
+        add_filter('script_loader_tag', function ($tag, $handle) use ($scriptHandle) {
             if ($scriptHandle !== $handle) {
                 return $tag;
             }
 
-            return '<script type="module" src="' . esc_url($src) . '" id="' . $handle . '-js"></script>';
-        }, 10, 3);
+            if (preg_match('/type=(["\'])[^"\']*\1/', $tag)) {
+                return preg_replace('/type=(["\'])[^"\']*\1/', 'type="module"', $tag, 1);
+            }
+
+            return preg_replace('/<script /', '<script type="module" ', $tag, 1);
+        }, 10, 2);
     }
 
 }

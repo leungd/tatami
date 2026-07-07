@@ -9,12 +9,22 @@ function wordpressVite() {
   return {
     name: 'wordpress-vite',
     configureServer(server) {
-      const { https, host, port } = server.config.server;
-      const protocol = https ? 'https' : 'http';
-      const origin = `${protocol}://${host || 'localhost'}:${port || 5173}`;
+      // Write the hot file only once the server is actually listening, using
+      // the resolved port — Vite silently auto-increments when the configured
+      // port is taken, and a hot file recording the wrong port 404s every asset.
+      server.httpServer?.once('listening', () => {
+        const { https, host } = server.config.server;
+        const protocol = https ? 'https' : 'http';
+        const address = server.httpServer.address();
+        const port =
+          typeof address === 'object' && address !== null
+            ? address.port
+            : (server.config.server.port ?? 5173);
+        const origin = `${protocol}://${host || 'localhost'}:${port}`;
 
-      fs.mkdirSync(path.dirname(hotFilePath), { recursive: true });
-      fs.writeFileSync(hotFilePath, origin);
+        fs.mkdirSync(path.dirname(hotFilePath), { recursive: true });
+        fs.writeFileSync(hotFilePath, origin);
+      });
 
       const clean = () => {
         if (fs.existsSync(hotFilePath)) fs.unlinkSync(hotFilePath);

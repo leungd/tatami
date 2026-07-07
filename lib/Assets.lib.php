@@ -16,17 +16,22 @@ class Assets {
      * so there is no render-blocking penalty.
      *
      * @return void
-     * @throws Exception
      */
     public function enqueue_styles_scripts(): void
     {
-        // enqueue the Vite module
+        // enqueue the Vite client when the dev server is running
+        // (this also loads the manifest for production builds)
         Vite::enqueue_module();
+
+        // no dev server and no build output — Vite::init() already logged it
+        if (!Vite::ready()) {
+            return;
+        }
 
         // enqueue CSS bundled with the JS entry
         $cssFiles = Vite::css('src/js/main.js');
         foreach ($cssFiles as $index => $cssFile) {
-            wp_enqueue_style('theme-style-' . $index, $cssFile, [], null, 'screen');
+            wp_enqueue_style('theme-style-' . $index, $cssFile, [], null, 'all');
         }
 
         // register and enqueue the main JS entry
