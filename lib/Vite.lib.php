@@ -98,7 +98,14 @@ class Vite {
             return;
         }
 
-        echo '<div class="notice notice-error"><p>Tatami: no Vite manifest found, so no theme assets are enqueued. Run <code>pnpm build</code>.</p></div>';
+        printf(
+            '<div class="notice notice-error"><p>%s</p></div>',
+            sprintf(
+                /* translators: %s: the build command */
+                esc_html__( 'Tatami: no Vite manifest found, so no theme assets are enqueued. Run %s.', 'tatami' ),
+                '<code>pnpm build</code>'
+            )
+        );
     }
 
     /**

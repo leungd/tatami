@@ -29,18 +29,24 @@ class Assets {
             return;
         }
 
-        // enqueue CSS bundled with the JS entry
-        $cssFiles = Vite::css('src/js/main.js');
-        foreach ($cssFiles as $index => $cssFile) {
-            wp_enqueue_style('theme-style-' . $index, $cssFile, [], null, 'all');
+        try {
+            // enqueue CSS bundled with the JS entry
+            $cssFiles = Vite::css('src/js/main.js');
+            foreach ($cssFiles as $index => $cssFile) {
+                wp_enqueue_style('theme-style-' . $index, $cssFile, [], null, 'all');
+            }
+
+            // register and enqueue the main JS entry
+            $filename = Vite::asset('src/js/main.js');
+            wp_enqueue_script('theme-script', $filename, [], null, false);
+
+            // update html script type to module
+            Vite::script_type_module('theme-script');
+        } catch (\Exception $e) {
+            // A manifest that exists but lacks the entry (renamed in
+            // vite.config.js) must degrade like a missing manifest, not fatal.
+            error_log('Tatami: ' . $e->getMessage());
         }
-
-        // register and enqueue the main JS entry
-        $filename = Vite::asset('src/js/main.js');
-        wp_enqueue_script('theme-script', $filename, [], null, false);
-
-        // update html script type to module
-        Vite::script_type_module('theme-script');
     }
 
 }

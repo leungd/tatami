@@ -13,14 +13,15 @@ function wordpressVite() {
       // the resolved port — Vite silently auto-increments when the configured
       // port is taken, and a hot file recording the wrong port 404s every asset.
       server.httpServer?.once('listening', () => {
-        const { https, host } = server.config.server;
+        const { https, host: configHost } = server.config.server;
         const protocol = https ? 'https' : 'http';
+        const host = configHost === true ? 'localhost' : configHost || 'localhost';
         const address = server.httpServer.address();
         const port =
           typeof address === 'object' && address !== null
             ? address.port
             : (server.config.server.port ?? 5173);
-        const origin = `${protocol}://${host || 'localhost'}:${port}`;
+        const origin = `${protocol}://${host}:${port}`;
 
         fs.mkdirSync(path.dirname(hotFilePath), { recursive: true });
         fs.writeFileSync(hotFilePath, origin);

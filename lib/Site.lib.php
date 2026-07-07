@@ -32,6 +32,13 @@ class Site extends TimberSite {
         // XML-RPC pingbacks are a spam/DDoS vector no client site uses.
         add_filter( 'xmlrpc_methods', array( $this, 'disable_xmlrpc_pingbacks' ) );
 
+        // WP's the_title filter chain entity-encodes ampersands (convert_chars);
+        // Twig autoescape then escapes again. Decode on the front end so titles
+        // escape exactly once at output.
+        if ( ! is_admin() ) {
+            add_filter( 'the_title', array( $this, 'decode_title_entities' ), 20 );
+        }
+
         parent::__construct();
     }
 
@@ -92,6 +99,10 @@ class Site extends TimberSite {
     public function disable_xmlrpc_pingbacks( $methods ) {
         unset( $methods['pingback.ping'], $methods['pingback.extensions.getPingbacks'] );
         return $methods;
+    }
+
+    public function decode_title_entities( $title ) {
+        return wp_specialchars_decode( $title, ENT_QUOTES );
     }
 
     public function remove_comments_admin_menu(): void {

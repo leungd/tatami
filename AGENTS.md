@@ -48,6 +48,7 @@ src/js/main.js         → JS entry point — imports CSS, initializes modules
 - Twig templates: `kebab-case.twig` matching WordPress template hierarchy
 - Page templates: `page-{slug}.twig` (auto-resolved by `page.php`)
 - Single templates: `single-{post_type}.twig` or `single-{slug}.twig`
+- Category archive templates: `archive-category-{slug}.twig` (other archives: `archive-{post_type}.twig`)
 - Twig partials: `partials/{name}.twig`
 - Twig macros: `macros/{name}.twig`
 - Twig modules: `modules/{name}.twig`
@@ -282,6 +283,7 @@ The base ships a semantic skeleton in `header.twig` (`<nav aria-label="Primary">
 - Comments are disabled site-wide in the base; a site that genuinely needs them removes the three comment filters and the admin-menu removal in `Tatami\Site::__construct()`.
 - Author archives return 404 (`Tatami\Site::disable_author_archives()`) — unused on client sites and an enumeration vector. A site that needs them removes that hook and uses `Timber::get_user()`.
 - Password-protected content renders Timber's password form (filter enabled in `Tatami\Site::__construct()`).
+- Front-end titles are entity-decoded (`Tatami\Site::decode_title_entities()` on `the_title`) so Twig's autoescape encodes them exactly once — WP's default filter chain pre-encodes ampersands, which would otherwise double-encode.
 
 ## Build & dev workflow
 
