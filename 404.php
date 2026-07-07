@@ -7,5 +7,5 @@
  */
 
 $context = Timber::context();
-$context['title'] = 'Oops! Page not found.';
+$context['title'] = __( 'Oops! Page not found.', 'tatami' );
 Timber::render( '404.twig', $context );

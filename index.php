@@ -8,6 +8,6 @@
  */
 
 $context                = Timber::context();
-$context['title']       = 'Blog';
+$context['title']       = __( 'Blog', 'tatami' );
 $templates              = array( 'index.twig' );
 Timber::render( $templates, $context );

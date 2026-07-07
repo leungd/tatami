@@ -9,7 +9,8 @@
 $templates = array( 'search.twig', 'archive.twig', 'index.twig' );
 
 $context          = Timber::context();
-$context['title'] = 'Search results for ' . get_search_query();
+/* translators: %s: search query */
+$context['title'] = sprintf( __( 'Search results for %s', 'tatami' ), get_search_query() );
 $context['search_query'] = get_search_query();
 
 Timber::render( $templates, $context );

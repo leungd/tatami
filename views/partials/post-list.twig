@@ -13,6 +13,6 @@
   {% include 'partials/pagination.twig' %}
 {% else %}
   <p>
-    {{ empty_message|default('No posts found.') }}
+    {{ empty_message|default(__('No posts found.', 'tatami')) }}
   </p>
 {% endif %}

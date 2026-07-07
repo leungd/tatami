@@ -4,7 +4,9 @@
   <div class="fluid-grid">
     <div class="col-[content-start/content-end]">
       {% include 'partials/post-list.twig' with {
-        empty_message: 'No results found for "' ~ search_query ~ '".'
+        empty_message: __('No results found for “%s”.', 'tatami')|format(
+          search_query
+        )
       } %}
     </div>
   </div>

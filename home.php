@@ -20,6 +20,6 @@ if ( $blog_page ) {
     // The Blog page itself — its title/ACF fields drive the header.
     $context['post'] = $blog_page;
 }
-$context['title'] = $blog_page ? $blog_page->title() : 'Blog';
+$context['title'] = $blog_page ? $blog_page->title() : __( 'Blog', 'tatami' );
 
 Timber::render( $templates, $context );

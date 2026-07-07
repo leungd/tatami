@@ -4,7 +4,7 @@
 {% if menu and menu.items is not empty %}
   <header>
     <div class="fluid-grid py-4">
-      <nav class="col-[content-start/content-end]" aria-label="Primary">
+      <nav class="col-[content-start/content-end]" aria-label="{{ __('Primary', 'tatami') }}">
         <ul class="flex flex-col gap-4 lg:flex-row lg:gap-6">
           {% for item in menu.items %}
             <li>

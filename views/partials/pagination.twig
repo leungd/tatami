@@ -1,7 +1,7 @@
 {% if posts.pagination.pages is not empty %}
   <nav
     class="col-[content-start/content-end] mt-8 flex justify-center"
-    aria-label="Pagination Navigation"
+    aria-label="{{ __('Pagination Navigation', 'tatami') }}"
   >
     <div
       class="flex gap-1 items-center p-1 bg-white rounded-lg border border-neutral-200"
@@ -27,7 +27,7 @@
               d="M15 19l-7-7 7-7"
             />
           </svg>
-          <span class="hidden sm:inline">Previous</span>
+          <span class="hidden sm:inline">{{ __('Previous', 'tatami') }}</span>
         </a>
       {% else %}
         <span
@@ -49,7 +49,7 @@
               d="M15 19l-7-7 7-7"
             />
           </svg>
-          <span class="hidden sm:inline">Previous</span>
+          <span class="hidden sm:inline">{{ __('Previous', 'tatami') }}</span>
         </span>
       {% endif %}
 
@@ -103,11 +103,13 @@
         class="flex items-center px-3 py-2 text-sm text-neutral-600 md:hidden"
       >
         <span class="font-medium">
-          Page
-          {{ posts.pagination.current }}
+          {{
+            __('Page %1$s of %2$s', 'tatami')|format(
+              posts.pagination.current,
+              posts.pagination.total
+            )
+          }}
         </span>
-        <span class="mx-1 text-neutral-400">of</span>
-        <span class="font-medium">{{ posts.pagination.total }}</span>
       </div>
 
       {# Next Button #}
@@ -116,7 +118,7 @@
           href="{{ posts.pagination.next.link }}"
           class="flex gap-2 items-center px-3 py-2 text-sm font-medium text-neutral-600 rounded-md transition-all duration-200 group hover:bg-neutral-100"
         >
-          <span class="hidden sm:inline">Next</span>
+          <span class="hidden sm:inline">{{ __('Next', 'tatami') }}</span>
           <svg
             class="w-4 h-4 transition-transform group-hover:translate-x-0.5"
             fill="none"
@@ -138,7 +140,7 @@
           class="flex gap-2 items-center px-3 py-2 text-sm font-medium text-neutral-300 rounded-md cursor-not-allowed"
           aria-hidden="true"
         >
-          <span class="hidden sm:inline">Next</span>
+          <span class="hidden sm:inline">{{ __('Next', 'tatami') }}</span>
           <svg
             class="w-4 h-4"
             fill="none"

@@ -4,9 +4,9 @@
   <div class="fluid-grid">
     <div class="col-[content-start/content-end]">
       <p>
-        Sorry, we couldn't find what you're looking for.
+        {{ __("Sorry, we couldn't find what you're looking for.", 'tatami') }}
       </p>
-      <a href="{{ site.home_url }}">Return to Home</a>
+      <a href="{{ site.home_url }}">{{ __('Return to Home', 'tatami') }}</a>
     </div>
   </div>
 {% endblock %}
