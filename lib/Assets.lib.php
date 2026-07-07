@@ -1,6 +1,8 @@
 <?php
 
-class Theme {
+namespace Tatami;
+
+class Assets {
 
     public function __construct()
     {

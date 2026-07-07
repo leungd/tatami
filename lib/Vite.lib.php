@@ -1,5 +1,7 @@
 <?php
 
+namespace Tatami;
+
 class Vite {
 
     /**
@@ -48,7 +50,7 @@ class Vite {
 
         // we must have a manifest file...
         if (!file_exists($manifestPath = static::buildPath() . '/.vite/manifest.json')) {
-            throw new Exception('No Vite Manifest exists. Should hot server be running?');
+            throw new \Exception('No Vite Manifest exists. Should hot server be running?');
         }
 
         // store our manifest contents.
@@ -92,7 +94,7 @@ class Vite {
         }
 
         if (!array_key_exists($asset, static::$manifest)) {
-            throw new Exception('Unknown Vite build asset: ' . $asset);
+            throw new \Exception('Unknown Vite build asset: ' . $asset);
         }
 
         return implode('/', [ get_stylesheet_directory_uri(), static::$buildPath, static::$manifest[$asset]['file'] ]);
@@ -152,7 +154,7 @@ class Vite {
         try {
             $asset = 'src/img/' . ltrim($img, '/');
             return static::asset($asset);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return null;
         }
     }

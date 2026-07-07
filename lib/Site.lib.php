@@ -1,8 +1,11 @@
 <?php
 
-use Timber\Site;
+namespace Tatami;
 
-class TatamiTheme extends Site {
+use Timber\Site as TimberSite;
+use Timber\Timber;
+
+class Site extends TimberSite {
     public function __construct() {
         add_action( 'after_setup_theme', array( $this, 'theme_supports' ) );
         add_action( 'init', array( $this, 'register_post_types' ) );
@@ -12,16 +15,7 @@ class TatamiTheme extends Site {
 
         add_filter( 'timber/context', array( $this, 'add_to_context' ) );
 
-        // Hide ACF Group Labels if contained within a tab
-        add_action('admin_enqueue_scripts', function () {
-            if (function_exists('acf_get_field_groups')) {
-                wp_add_inline_style('acf-input', '
-                    .acf-fields > .acf-field-tab ~ .acf-field-group > .acf-label {
-                        display: none !important;
-                    }
-                ');
-            }
-        });
+        add_action( 'admin_enqueue_scripts', array( $this, 'hide_acf_grouped_labels' ) );
 
         parent::__construct();
     }
@@ -38,6 +32,22 @@ class TatamiTheme extends Site {
      */
     public function register_taxonomies() {
 
+    }
+
+    /**
+     * Hide ACF group labels when the group is contained within a tab —
+     * the tab already provides the heading.
+     */
+    public function hide_acf_grouped_labels(): void {
+        if ( ! function_exists( 'acf_get_field_groups' ) ) {
+            return;
+        }
+
+        wp_add_inline_style( 'acf-input', '
+            .acf-fields > .acf-field-tab ~ .acf-field-group > .acf-label {
+                display: none !important;
+            }
+        ' );
     }
 
     /**
@@ -121,8 +131,6 @@ class TatamiTheme extends Site {
                 'audio',
             )
         );
-
-        add_theme_support( 'menus' );
 
         register_nav_menus([
             'primary' => __('Primary Menu', 'tatami'),
