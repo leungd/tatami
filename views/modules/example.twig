@@ -1,0 +1,20 @@
+{#
+  Reference module — delete or replace on a real site.
+
+  Modules are self-contained sections: they receive data from the caller
+  and guard on it, so dropping one into any template is safe — it only
+  renders where the router supplied data.
+
+  {% include 'modules/example.twig' with { items: someData } %}
+#}
+{% if items %}
+  <section class="fluid-grid">
+    <div class="col-[content-start/content-end]">
+      <ul>
+        {% for item in items %}
+          <li>{{ item.title }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+{% endif %}

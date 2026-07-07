@@ -1,0 +1,26 @@
+{#
+  House image macro — renders an <img> from an attachment ID (ACF image
+  fields stored as ID, or any media-library ID).
+
+  {% from 'macros/image.twig' import acf_image %}
+  {{ acf_image(post.meta('hero_image'), '(min-width: 64rem) 50vw, 100vw', 'rounded-lg', 'eager') }}
+
+  loading defaults to lazy — pass 'eager' for above-the-fold heroes.
+  Empty media-library alt → alt="", the correct decorative-image behavior.
+#}
+{% macro acf_image(image_id, sizes, class, loading = 'lazy') %}
+  {% set img = get_image(image_id) %}
+  {% if img %}
+    <img
+      src="{{ img.src }}"
+      srcset="{{ img.srcset }}"
+      sizes="{{ sizes|default('100vw') }}"
+      width="{{ img.width }}"
+      height="{{ img.height }}"
+      alt="{{ img.alt }}"
+      class="{{ class }}"
+      loading="{{ loading }}"
+      decoding="async"
+    />
+  {% endif %}
+{% endmacro %}

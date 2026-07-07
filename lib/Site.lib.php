@@ -115,33 +115,6 @@ class Site extends TimberSite {
     }
 
     /**
-     * Setup Featured Image with Parent Fallback
-     *
-     * @param Timber\Post $post
-     * @param array $context
-     * @return void
-     */
-    public function setup_featured_image($post, &$context) {
-        $featured_image = $post->thumbnail();
-
-        // Only look for parent featured image if current post doesn't have one
-        if (!$featured_image && $post->post_parent) {
-            $parent_post = Timber::get_post($post->post_parent);
-            $parent_featured_image = $parent_post->thumbnail();
-
-            if ($parent_featured_image) {
-                $featured_image = $parent_featured_image;
-            }
-        }
-
-        if ($featured_image) {
-            $context['featured_image'] = true;
-            $context['featured_image_src'] = $featured_image->src();
-            $context['featured_image_alt'] = $featured_image->alt();
-        }
-    }
-
-    /**
      * This is where you add some context
      *
      * @param string $context context['this'] Being the Twig's {{ this }}.

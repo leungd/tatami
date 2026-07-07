@@ -6,8 +6,6 @@
  * @subpackage  Tatami
  */
 
-$context          = Timber::context();
-$context['posts'] = Timber::get_posts();
-$context['post']  = Timber::get_post();
+$context = Timber::context();
 
 Timber::render( 'front-page.twig', $context );

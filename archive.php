@@ -21,12 +21,10 @@ if ( is_day() ) {
     $context['title'] = single_tag_title( '', false );
 } elseif ( is_category() ) {
     $context['title'] = 'Category: ' . single_cat_title( '', false );
-    array_unshift( $templates, 'archive-' . get_query_var( 'cat' ) . '.twig' );
+    array_unshift( $templates, 'archive-category-' . get_queried_object()->slug . '.twig' );
 } elseif ( is_post_type_archive() ) {
     $context['title'] = post_type_archive_title( '', false );
     array_unshift( $templates, 'archive-' . get_post_type() . '.twig' );
 }
-
-$context['posts'] = Timber::get_posts();
 
 Timber::render( $templates, $context );

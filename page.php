@@ -9,9 +9,8 @@
 $post             = Timber::get_post();
 $context          = Timber::context();
 $context['post']  = $post;
-$context['slug']  = 'page-' . $post->post_name;
 $context['title'] = $post->post_title;
 
-$context['site']->setup_featured_image($post, $context);
+$context['featured_image'] = Tatami\Queries::featured_image_with_fallback( $post );
 
 Timber::render( array( 'page-' . $post->post_name . '.twig', 'page.twig' ), $context );

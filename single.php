@@ -11,14 +11,14 @@ $context          = Timber::context();
 $context['post']  = $post;
 $context['title'] = get_the_title();
 
-$context['site']->setup_featured_image($post, $context);
+$context['featured_image'] = Tatami\Queries::featured_image_with_fallback( $post );
 
 if ($post->post_type === 'post') {
     $context['tag'] = 'article';
 }
 
 Timber::render(array(
-    'single-' . $post->post_type . '.twig',
     'single-' . $post->slug . '.twig',
+    'single-' . $post->post_type . '.twig',
     'single.twig'
 ), $context);
