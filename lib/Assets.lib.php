@@ -7,6 +7,7 @@ class Assets {
     public function __construct()
     {
         add_action('wp_enqueue_scripts', [ $this, 'enqueue_styles_scripts' ], 20);
+        add_action('admin_notices', [ Vite::class, 'maybe_render_missing_manifest_notice' ]);
     }
 
     /**

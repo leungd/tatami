@@ -39,9 +39,10 @@ class Vite {
      */
     public static function init(): string|null
     {
-        // The hot file only means anything on a dev machine. A stale one —
-        // crashed dev server, or one that reached a server — must never put
-        // the site in hot mode, so hot detection is gated on environment.
+        // The hot file only means anything in a dev environment — one that
+        // reaches staging/production (accidental deploy, crashed dev server
+        // on a shared host) must never put the site in hot mode. Within
+        // local/development, a stale hot file still needs manual deletion.
         $isDevEnvironment = in_array( wp_get_environment_type(), [ 'local', 'development' ], true );
         static::$isHot    = $isDevEnvironment && file_exists( static::hotFilePath() );
 
@@ -54,12 +55,17 @@ class Vite {
         // every front-end request.
         if (!file_exists($manifestPath = static::buildPath() . '/.vite/manifest.json')) {
             error_log('Tatami: Vite manifest not found — run `pnpm build`, or start `pnpm dev` in a local environment.');
-            add_action('admin_notices', array(static::class, 'render_missing_manifest_notice'));
             return null;
         }
 
+        $decoded = json_decode(file_get_contents($manifestPath), true);
+        if (!is_array($decoded)) {
+            error_log('Tatami: Vite manifest is unreadable or corrupt — re-run `pnpm build`.');
+            $decoded = [];
+        }
+
         // store our manifest contents.
-        static::$manifest = json_decode(file_get_contents($manifestPath), true) ?: [];
+        static::$manifest = $decoded;
 
         return null;
     }
@@ -75,12 +81,23 @@ class Vite {
     }
 
     /**
-     * Admin notice shown when no manifest was found.
+     * Admin notice when no manifest exists and no dev server is running.
+     * Hooked directly to admin_notices (see Assets) — enqueue hooks never
+     * fire in admin requests, so the check must run independently there.
      *
      * @return void
      */
-    public static function render_missing_manifest_notice(): void
+    public static function maybe_render_missing_manifest_notice(): void
     {
+        $isDevEnvironment = in_array( wp_get_environment_type(), [ 'local', 'development' ], true );
+        if ( $isDevEnvironment && file_exists( static::hotFilePath() ) ) {
+            return;
+        }
+
+        if ( file_exists( static::buildPath() . '/.vite/manifest.json' ) ) {
+            return;
+        }
+
         echo '<div class="notice notice-error"><p>Tatami: no Vite manifest found, so no theme assets are enqueued. Run <code>pnpm build</code>.</p></div>';
     }
 
