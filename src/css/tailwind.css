@@ -6,18 +6,99 @@
 /* Load typography plugin */
 @plugin "@tailwindcss/typography";
 
-/* Theme customizations */
+/* ==========================================================================
+   Theme
+   Design tokens live in @theme so utilities regenerate from them and the
+   values stay visible to theme()/token introspection. Derivative sites add
+   brand colors and fonts here (record intended AA color pairings as
+   comments next to the tokens).
+   ========================================================================== */
+
 @theme {
-  --typography-body-max-width: none;
+  /* ── Type scale (fluid) ──
+     clamp() spans small→large viewports; text-* utilities pick these up
+     automatically. Line-heights tighten as sizes grow. */
+  --text-xs: clamp(0.75rem, 0.6rem + 0.8vw, 1rem);
+  --text-xs--line-height: 1.4;
+  --text-sm: clamp(0.875rem, 0.7rem + 0.9vw, 1.125rem);
+  --text-sm--line-height: 1.45;
+  --text-base: clamp(1rem, 0.8rem + 1vw, 1.25rem);
+  --text-base--line-height: 1.6;
+  --text-lg: clamp(1.125rem, 0.9rem + 1.2vw, 1.5rem);
+  --text-lg--line-height: 1.55;
+  --text-xl: clamp(1.25rem, 1rem + 1.4vw, 1.75rem);
+  --text-xl--line-height: 1.4;
+  --text-2xl: clamp(1.5rem, 1.2rem + 1.6vw, 2rem);
+  --text-2xl--line-height: 1.3;
+  --text-3xl: clamp(1.875rem, 1.5rem + 1.8vw, 2.5rem);
+  --text-3xl--line-height: 1.2;
+  --text-4xl: clamp(2.25rem, 1.8rem + 2vw, 3rem);
+  --text-4xl--line-height: 1.15;
+  --text-5xl: clamp(3rem, 2.4rem + 2.5vw, 4rem);
+  --text-5xl--line-height: 1.1;
+  --text-6xl: clamp(3.75rem, 3rem + 3vw, 5rem);
+  --text-6xl--line-height: 1;
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+@layer base {
+  /* Preflight resets headings to inherit; apply the fluid scale so an
+     unclassed <h1> reads as a heading on every page. */
+  h1 {
+    font-size: var(--text-4xl);
+    line-height: var(--text-4xl--line-height);
+    font-weight: 700;
+  }
+
+  h2 {
+    font-size: var(--text-3xl);
+    line-height: var(--text-3xl--line-height);
+    font-weight: 700;
+  }
+
+  h3 {
+    font-size: var(--text-2xl);
+    line-height: var(--text-2xl--line-height);
+    font-weight: 600;
+  }
+
+  h4 {
+    font-size: var(--text-xl);
+    line-height: var(--text-xl--line-height);
+    font-weight: 600;
+  }
+
+  h5 {
+    font-size: var(--text-lg);
+    line-height: var(--text-lg--line-height);
+    font-weight: 600;
+  }
+
+  h6 {
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    font-weight: 600;
+  }
+
+  /* Non-essential motion stops for users who ask for reduced motion. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 /* ==========================================================================
    Layout
    ========================================================================== */
-
-body {
-  overflow-x: hidden;
-}
 
 .fluid-grid {
   --col-gap: clamp(1rem, 3vw, 4rem);
@@ -67,24 +148,46 @@ body {
 }
 
 /* ==========================================================================
-   Typography
+   Accessibility helpers
+   .screen-reader-text hides content visually while leaving it for assistive
+   tech (it's also the class WP core and plugins emit for SR-only text); on
+   :focus it becomes visible, which is what turns the skip link in base.twig
+   into a working keyboard bypass.
    ========================================================================== */
 
-html {
-  @apply text-base lg:text-lg;
+.screen-reader-text {
+  border: 0;
+  clip-path: inset(50%);
+  height: 1px;
+  width: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  position: absolute;
+  word-wrap: normal !important;
 }
 
-@layer base {
-  :root {
-    --text-xs: clamp(0.75rem, 0.6rem + 0.8vw, 1rem);
-    --text-sm: clamp(0.875rem, 0.7rem + 0.9vw, 1.125rem);
-    --text-base: clamp(1rem, 0.8rem + 1vw, 1.25rem);
-    --text-lg: clamp(1.125rem, 0.9rem + 1.2vw, 1.5rem);
-    --text-xl: clamp(1.25rem, 1rem + 1.4vw, 1.75rem);
-    --text-2xl: clamp(1.5rem, 1.2rem + 1.6vw, 2rem);
-    --text-3xl: clamp(1.875rem, 1.5rem + 1.8vw, 2.5rem);
-    --text-4xl: clamp(2.25rem, 1.8rem + 2vw, 3rem);
-    --text-5xl: clamp(3rem, 2.4rem + 2.5vw, 4rem);
-    --text-6xl: clamp(3.75rem, 3rem + 3vw, 5rem);
-  }
+.screen-reader-text:focus {
+  clip-path: none;
+  height: auto;
+  width: auto;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 100;
+  display: block;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.375rem;
+  background: #171717;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 0 0 2px #fff;
 }
+
+/* ==========================================================================
+   Components
+   Prefer utilities in Twig templates; this section is only for markup the
+   theme doesn't author (WYSIWYG/the_content() output, plugin overrides)
+   and design-system primitives.
+   ========================================================================== */
