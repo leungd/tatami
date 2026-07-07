@@ -1,10 +1,12 @@
-{% extends "base.twig" %}
+{% extends 'base.twig' %}
 
 {% block content %}
-	<div class="fluid-grid">
-		<div class="col-[content-start/content-end]">
-			<p>Sorry, we couldn't find what you're looking for.</p>
-			<a href="{{ site.home_url }}">Return to Home</a>
-		</div>
-	</div>
+  <div class="fluid-grid">
+    <div class="col-[content-start/content-end]">
+      <p>
+        Sorry, we couldn't find what you're looking for.
+      </p>
+      <a href="{{ site.home_url }}">Return to Home</a>
+    </div>
+  </div>
 {% endblock %}

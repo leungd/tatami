@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Configure content sources for Twig templates */
 @source "../../views/**/*.twig";
@@ -22,9 +22,29 @@ body {
 .fluid-grid {
   --col-gap: clamp(1rem, 3vw, 4rem);
   --content-max-width: var(--breakpoint-lg);
-  --padding-left: clamp(calc(env(safe-area-inset-left, 0rem) + 1rem), 2vw, calc(env(safe-area-inset-left, 0rem) + 2rem));
-  --padding-right: clamp(calc(env(safe-area-inset-right, 0rem) + 1rem), 2vw, calc(env(safe-area-inset-right, 0rem) + 2rem));
-  --col-width: calc((min(calc(100% - var(--padding-left) - var(--padding-right) - 2 * var(--col-gap)), var(--content-max-width)) - 11 * var(--col-gap)) / 12);
+  --padding-left: clamp(
+    calc(env(safe-area-inset-left, 0rem) + 1rem),
+    2vw,
+    calc(env(safe-area-inset-left, 0rem) + 2rem)
+  );
+  --padding-right: clamp(
+    calc(env(safe-area-inset-right, 0rem) + 1rem),
+    2vw,
+    calc(env(safe-area-inset-right, 0rem) + 2rem)
+  );
+  --col-width: calc(
+    (
+        min(
+            calc(
+              100% - var(--padding-left) - var(--padding-right) - 2 *
+                var(--col-gap)
+            ),
+            var(--content-max-width)
+          ) -
+          11 * var(--col-gap)
+      ) /
+      12
+  );
   --side-width: minmax(0, 1fr);
   column-gap: var(--col-gap);
   display: grid;

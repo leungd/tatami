@@ -219,6 +219,10 @@ templating can't solve:
 - Access ACF fields via: `{{ post.meta('field_name') }}` or `{{ options.field_name }}`
 - Use Twig filters for display logic: `{{ post.date | date('F j, Y') }}`
 - Never put PHP logic in Twig — if you need data transformation, do it in the PHP context
+- `pnpm format` formats all Twig templates except `views/base.twig` — the Twig plugin's parser
+  cannot handle its dynamic `<{{tag}}>` wrapper (listed in `.prettierignore`). Format that file
+  by hand: 2-space indent, same as every other template. Any new template using a dynamic
+  element name must also be added to `.prettierignore`.
 
 ## Navigation
 

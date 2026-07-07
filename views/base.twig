@@ -1,46 +1,46 @@
 <!DOCTYPE html>
 <html {{ site.language_attributes }}>
 
-	{% block head %}
-		{% include 'partials/head.twig' %}
-	{% endblock %}
+  {% block head %}
+    {% include 'partials/head.twig' %}
+  {% endblock %}
 
-	{% set tag = tag|default('div') %}
+  {% set tag = tag|default('div') %}
 
-	<body class="{{body_class}}">
+  <body class="{{body_class}}">
 
-		<a class="skip-link screen-reader-text" href="#content">
-			{{ _e( 'Skip to content') }}
-		</a>
+    <a class="skip-link screen-reader-text" href="#content">
+      {{ _e( 'Skip to content') }}
+    </a>
 
-		{% block header %}
-			{% include 'header.twig' %}
-		{% endblock %}
+    {% block header %}
+      {% include 'header.twig' %}
+    {% endblock %}
 
-		<main id="main" role="main">
+    <main id="main" role="main">
 
-			<{{tag}} class="flex flex-col gap-y-32 max-w-full">
-				{% block pageHeader %}
-					{% include 'partials/page-header.twig' with {
-              title: title,
-            } %}
-				{% endblock %}
-				{% block content %}
-					<div class="fluid-grid py-16">
-						<div class="col-[content-start/content-end]">
-							Sorry, no content
-						</div>
-					</div>
-				{% endblock %}
-				{% block modules %}{% endblock %}
-			</{{tag}}>
+      <{{tag}} class="flex flex-col gap-y-32 max-w-full">
+        {% block pageHeader %}
+          {% include 'partials/page-header.twig' with {
+            title: title,
+          } %}
+        {% endblock %}
+        {% block content %}
+          <div class="fluid-grid py-16">
+            <div class="col-[content-start/content-end]">
+              Sorry, no content
+            </div>
+          </div>
+        {% endblock %}
+        {% block modules %}{% endblock %}
+      </{{tag}}>
 
-		</main>
+    </main>
 
-		{% block footer %}
-			{% include 'footer.twig' %}
-			{{ function('wp_footer') }}
-		{% endblock %}
+    {% block footer %}
+      {% include 'footer.twig' %}
+      {{ function('wp_footer') }}
+    {% endblock %}
 
-	</body>
+  </body>
 </html>

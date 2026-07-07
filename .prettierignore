@@ -1,0 +1,3 @@
+# The Twig plugin's parser cannot handle dynamic element names (<{{tag}}>),
+# which base.twig uses for its overridable content wrapper.
+views/base.twig
