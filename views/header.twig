@@ -1,1 +1,24 @@
-{# Site header — customize here #}
+{# Site header — semantic skeleton; each site styles/extends it per design.
+   Dropdown submenus: see the Navigation section in AGENTS.md (disclosure
+   pattern — toggle aria-expanded, Escape to close, sr-only labels). #}
+{% if menu and menu.items is not empty %}
+  <header>
+    <div class="fluid-grid py-4">
+      <nav class="col-[content-start/content-end]" aria-label="Primary">
+        <ul class="flex flex-col gap-4 lg:flex-row lg:gap-6">
+          {% for item in menu.items %}
+            <li>
+              <a
+                href="{{ item.link }}"
+                {% if item.current %}aria-current="page"{% endif %}
+                {% if item.target == '_blank' %}target="_blank" rel="noopener noreferrer"{% endif %}
+              >
+                {{ item.title }}
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </nav>
+    </div>
+  </header>
+{% endif %}

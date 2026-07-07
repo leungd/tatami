@@ -1,3 +1,7 @@
 # The Twig plugin's parser cannot handle dynamic element names (<{{tag}}>),
 # which base.twig uses for its overridable content wrapper.
 views/base.twig
+
+# The Twig plugin's parser cannot handle {% if %} tags inside an element's
+# attribute list, which header.twig uses for conditional link attributes.
+views/header.twig

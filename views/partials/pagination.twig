@@ -4,19 +4,21 @@
     aria-label="Pagination Navigation"
   >
     <div
-      class="flex gap-1 items-center p-1 bg-white rounded-lg border border-gray-200"
+      class="flex gap-1 items-center p-1 bg-white rounded-lg border border-neutral-200"
     >
       {# Previous Button #}
       {% if posts.pagination.prev %}
         <a
           href="{{ posts.pagination.prev.link }}"
-          class="flex gap-2 items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-md transition-all duration-200 group hover:text-blue-600 hover:bg-blue-50"
+          class="flex gap-2 items-center px-3 py-2 text-sm font-medium text-neutral-600 rounded-md transition-all duration-200 group hover:bg-neutral-100"
         >
           <svg
             class="w-4 h-4 transition-transform group-hover:-translate-x-0.5"
             fill="none"
             stroke="currentColor"
-            viewbox="0 0 24 24"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            focusable="false"
           >
             <path
               stroke-linecap="round"
@@ -29,13 +31,16 @@
         </a>
       {% else %}
         <span
-          class="flex gap-2 items-center px-3 py-2 text-sm font-medium text-gray-300 rounded-md cursor-not-allowed"
+          class="flex gap-2 items-center px-3 py-2 text-sm font-medium text-neutral-300 rounded-md cursor-not-allowed"
+          aria-hidden="true"
         >
           <svg
             class="w-4 h-4"
             fill="none"
             stroke="currentColor"
-            viewbox="0 0 24 24"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            focusable="false"
           >
             <path
               stroke-linecap="round"
@@ -55,20 +60,23 @@
             {% if 'current' in page.class %}
               {# Current Page #}
               <span
-                class="relative px-3 py-2 text-sm font-semibold text-white rounded-md shadow-sm bg-blue-600"
+                class="relative px-3 py-2 text-sm font-semibold text-white rounded-md shadow-sm bg-neutral-900"
+                aria-current="page"
               >
                 {{ page.title }}
               </span>
             {% elseif page.title == '…' %}
               {# Ellipsis #}
-              <span class="px-2 py-2 text-sm text-gray-400 pointer-events-none">
+              <span
+                class="px-2 py-2 text-sm text-neutral-400 pointer-events-none"
+              >
                 {{ page.title }}
               </span>
             {% else %}
               {# Regular Page Link #}
               <a
                 href="{{ page.link }}"
-                class="px-3 py-2 text-sm font-medium text-gray-600 rounded-md transition-all duration-200 hover:text-blue-600 hover:bg-blue-50"
+                class="px-3 py-2 text-sm font-medium text-neutral-600 rounded-md transition-all duration-200 hover:bg-neutral-100"
               >
                 {{ page.title }}
               </a>
@@ -76,12 +84,13 @@
           {% else %}
             {% if 'current' in page.class %}
               <span
-                class="relative px-3 py-2 text-sm font-semibold text-white rounded-md shadow-sm bg-blue-600"
+                class="relative px-3 py-2 text-sm font-semibold text-white rounded-md shadow-sm bg-neutral-900"
+                aria-current="page"
               >
                 {{ page.title }}
               </span>
             {% else %}
-              <span class="px-2 py-2 text-sm text-gray-400">
+              <span class="px-2 py-2 text-sm text-neutral-400">
                 {{ page.title }}
               </span>
             {% endif %}
@@ -90,12 +99,14 @@
       </div>
 
       {# Mobile Page Info #}
-      <div class="flex items-center px-3 py-2 text-sm text-gray-600 md:hidden">
+      <div
+        class="flex items-center px-3 py-2 text-sm text-neutral-600 md:hidden"
+      >
         <span class="font-medium">
           Page
           {{ posts.pagination.current }}
         </span>
-        <span class="mx-1 text-gray-400">of</span>
+        <span class="mx-1 text-neutral-400">of</span>
         <span class="font-medium">{{ posts.pagination.total }}</span>
       </div>
 
@@ -103,14 +114,16 @@
       {% if posts.pagination.next %}
         <a
           href="{{ posts.pagination.next.link }}"
-          class="flex gap-2 items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-md transition-all duration-200 group hover:text-blue-600 hover:bg-blue-50"
+          class="flex gap-2 items-center px-3 py-2 text-sm font-medium text-neutral-600 rounded-md transition-all duration-200 group hover:bg-neutral-100"
         >
           <span class="hidden sm:inline">Next</span>
           <svg
             class="w-4 h-4 transition-transform group-hover:translate-x-0.5"
             fill="none"
             stroke="currentColor"
-            viewbox="0 0 24 24"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            focusable="false"
           >
             <path
               stroke-linecap="round"
@@ -122,14 +135,17 @@
         </a>
       {% else %}
         <span
-          class="flex gap-2 items-center px-3 py-2 text-sm font-medium text-gray-300 rounded-md cursor-not-allowed"
+          class="flex gap-2 items-center px-3 py-2 text-sm font-medium text-neutral-300 rounded-md cursor-not-allowed"
+          aria-hidden="true"
         >
           <span class="hidden sm:inline">Next</span>
           <svg
             class="w-4 h-4"
             fill="none"
             stroke="currentColor"
-            viewbox="0 0 24 24"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            focusable="false"
           >
             <path
               stroke-linecap="round"
