@@ -65,7 +65,7 @@ Use Tailwind's arbitrary value syntax for grid column placement.
 
 ### Vite Integration
 
-Vite is integrated via a custom WordPress plugin in `vite.config.js` that:
+Vite is integrated via a custom Vite plugin (`wordpress-vite` in `vite.config.js`) that:
 - Writes a `build/hot` file when the dev server is running
 - Cleans up the hot file on server stop
 - Triggers full-page reload on `.php` and `.twig` file changes
