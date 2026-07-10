@@ -27,7 +27,7 @@ lib/Assets.lib.php     → Asset enqueueing via Vite integration
 lib/Vite.lib.php       → Tatami\Vite — Vite ↔ WordPress bridge (dev server detection, manifest reading)
 views/                 → All Twig templates
   base.twig            → Root HTML shell — all page templates extend this
-  partials/            → Reusable fragments (head, page-header, pagination, post-list)
+  partials/            → Reusable fragments (head, hero, pagination, post-list)
   macros/              → Twig macros for repeated patterns (images, nav items)
   modules/             → Self-contained content sections (services grid, map, etc.)
 src/css/tailwind.css   → Tailwind config + custom utilities + component styles
@@ -89,7 +89,27 @@ The standard setup is a static "Home" page + a "Blog" posts page assigned under 
 
 ### Featured images (house tool)
 
-Routers for singular views assign `$context['featured_image'] = Tatami\Queries::featured_image_with_fallback($post);` — a Timber image object with parent fallback (a page without a thumbnail inherits its parent's). Templates read `featured_image.src`, `featured_image.alt`, `featured_image.width`, `featured_image.height`; `partials/page-header.twig` demonstrates consumption as an optional hero. Derivative heroes build on this key. (Older derivatives consume `featured_image_src`/`featured_image_alt` — a breaking difference; don't retrofit them.)
+Routers for singular views assign `$context['featured_image'] = Tatami\Queries::featured_image_with_fallback($post);` — a Timber image object with parent fallback (a page without a thumbnail inherits its parent's). Templates read `featured_image.src`, `featured_image.alt`, `featured_image.width`, `featured_image.height`; `partials/hero.twig` demonstrates consumption as an optional hero. Derivative heroes build on this key. (Older derivatives consume `featured_image_src`/`featured_image_alt` — a breaking difference; don't retrofit them.)
+
+### Hero (house tool)
+
+Every page's hero renders from `partials/hero.twig`, pulled in by `{% block hero %}` in `base.twig`. **Never hand-roll a `<header>` in a `single-*` / `page-*` template** — override the block and reuse the partial. The partial exposes two named blocks so derivatives *extend* the shell instead of duplicating it:
+
+- `heroMedia` — the optional full-bleed featured image
+- `heroBody` — the title region (defaults to `<p>{{ title }}</p>`)
+
+```twig
+{% block hero %}
+  {% embed 'partials/hero.twig' with { title, featured_image } %}
+    {% block heroBody %}
+      {{ parent() }}
+      <p class="mt-4 text-sm">{{ post.date|date('F j, Y') }}</p>
+    {% endblock %}
+  {% endembed %}
+{% endblock %}
+```
+
+The hero title is a **label (`<p>`), not the page heading** — the theme does not use the page title as the `<h1>`. Each page's single `<h1>` is the derivative's responsibility, rendered in the content region; in practice the `<h1>` content writers add to the WYSIWYG body (`post.content`) covers it. `pnpm lint` fails any page template that hand-rolls a `<header>`.
 
 ### Add a reusable module
 1. Create `views/modules/{name}.twig`
@@ -293,7 +313,7 @@ composer install      # Install PHP dependencies (Timber)
 pnpm dev              # Start Vite dev server (HMR, full-page reload on PHP/Twig changes)
 pnpm build            # Production build → build/ directory with manifest
 pnpm preview          # Preview production build locally
-pnpm lint             # ESLint
+pnpm lint             # ESLint + Twig hero-guardrail (no page template may hand-roll a <header>)
 pnpm format           # Prettier (JS, CSS, Twig)
 ```
 
@@ -320,6 +340,7 @@ pnpm format           # Prettier (JS, CSS, Twig)
 - **No direct database queries** — use WordPress/Timber APIs
 - **No `echo` in PHP template files** — all output goes through Twig
 - **No npm or yarn** — this project uses pnpm exclusively
+- **No hand-rolled page headers** — a `single-*`/`page-*` template must not contain its own `<header>`; override `{% block hero %}` and reuse `partials/hero.twig` (enforced by `pnpm lint`)
 
 ## Definition of done (template work)
 
