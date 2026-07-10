@@ -1,15 +1,17 @@
+{% from 'macros/image.twig' import image %}
 {% if title %}
   <header class="fluid-grid">
     {% block heroMedia %}
       {% if featured_image %}
-        <img
-          class="col-[full-start/full-end] max-h-96 w-full object-cover"
-          src="{{ featured_image.src }}"
-          alt="{{ featured_image.alt }}"
-          width="{{ featured_image.width }}"
-          height="{{ featured_image.height }}"
-          loading="eager"
-        />
+        {{
+          image(
+            featured_image,
+            '100vw',
+            'col-[full-start/full-end] max-h-96 w-full object-cover',
+            'eager',
+            'high'
+          )
+        }}
       {% endif %}
     {% endblock %}
     <div class="col-[content-start/content-end]">

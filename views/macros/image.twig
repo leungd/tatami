@@ -1,15 +1,23 @@
 {#
-  House image macro — renders an <img> from an attachment ID (ACF image
-  fields stored as ID, or any media-library ID).
+  House <img> renderer. Accepts either an attachment ID (ACF image fields
+  stored as ID, or any media-library ID) or an already-resolved Timber
+  image object — get_image() normalizes both, so callers holding a
+  featured_image can pass it straight through.
 
-  {% from 'macros/image.twig' import acf_image %}
-  {{ acf_image(post.meta('hero_image'), '(min-width: 64rem) 50vw, 100vw', 'rounded-lg', 'eager') }}
+    {% from 'macros/image.twig' import image %}
+
+    From an ACF image ID:
+    {{ image(post.meta('hero_image'), '(min-width: 64rem) 50vw, 100vw', 'rounded-lg') }}
+
+    From a Timber image object (e.g. context.featured_image):
+    {{ image(featured_image, '100vw', 'w-full object-cover', 'eager', 'high') }}
 
   loading defaults to lazy — pass 'eager' for above-the-fold heroes.
+  fetchpriority defaults to auto — pair 'eager' with 'high' for the LCP image.
   Empty media-library alt → alt="", the correct decorative-image behavior.
 #}
-{% macro acf_image(image_id, sizes, class, loading = 'lazy') %}
-  {% set img = get_image(image_id) %}
+{% macro image(image, sizes, class, loading = 'lazy', fetchpriority = 'auto') %}
+  {% set img = get_image(image) %}
   {% if img %}
     <img
       src="{{ img.src }}"
@@ -20,6 +28,7 @@
       alt="{{ img.alt }}"
       class="{{ class }}"
       loading="{{ loading }}"
+      fetchpriority="{{ fetchpriority }}"
       decoding="async"
     />
   {% endif %}
