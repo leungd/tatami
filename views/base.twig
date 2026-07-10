@@ -19,8 +19,8 @@
     <main id="main">
 
       <{{tag}} class="flex flex-col gap-y-32 max-w-full">
-        {% block pageHeader %}
-          {% include 'partials/page-header.twig' with {
+        {% block hero %}
+          {% include 'partials/hero.twig' with {
             title: title,
           } %}
         {% endblock %}
