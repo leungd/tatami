@@ -1,5 +1,17 @@
 {% extends 'base.twig' %}
 
+{% block hero %}
+  {% embed 'partials/hero.twig'
+    with {
+      title
+    }
+  %}
+    {% block heroBody %}
+      <h1>{{ title }}</h1>
+    {% endblock %}
+  {% endembed %}
+{% endblock %}
+
 {% block content %}
   <div class="fluid-grid">
     <div class="col-[content-start/content-end]">

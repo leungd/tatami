@@ -38,3 +38,16 @@ test('ignores <header> in a module (modules never extend base)', () => {
   const content = '<article>\n  <header>Card title</header>\n</article>';
   assert.equal(checkTemplate('views/modules/service-card.twig', content), null);
 });
+
+test('flags <header> even when extends uses double quotes and whitespace control', () => {
+  const content = [
+    '{%- extends "base.twig" -%}',
+    '{% block hero %}',
+    '  <header class="fluid-grid"><h1>{{ title }}</h1></header>',
+    '{% endblock %}',
+  ].join('\n');
+  assert.deepEqual(checkTemplate('views/single-x.twig', content), {
+    file: 'views/single-x.twig',
+    line: 3,
+  });
+});

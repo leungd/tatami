@@ -111,6 +111,8 @@ Every page's hero renders from `partials/hero.twig`, pulled in by `{% block hero
 
 The hero title is a **label (`<p>`), not the page heading** — the theme does not use the page title as the `<h1>`. Each page's single `<h1>` is the derivative's responsibility, rendered in the content region; in practice the `<h1>` content writers add to the WYSIWYG body (`post.content`) covers it. `pnpm lint` fails any page template that hand-rolls a `<header>`.
 
+On content-less listing/utility pages (`archive`, `search`, `404`, the blog `index`) the router-set `title` *is* the page heading — those base templates override `heroBody` to render `<h1>{{ title }}</h1>` (a working reference for the pattern). Content pages keep the `<p>` label and get their `<h1>` from the WYSIWYG body. Note the guardrail also disallows a per-section `<article><header>` inside a page template — push that markup into a module (modules never extend `base.twig`); page-level meta belongs in `heroBody`.
+
 ### Add a reusable module
 1. Create `views/modules/{name}.twig`
 2. Include it from page templates: `{% include 'modules/{name}.twig' with { data: someData } %}`

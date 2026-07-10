@@ -11,7 +11,9 @@ const VIEWS_DIR = 'views';
 // the site chrome (header.twig) and the hero partial are included/embedded, never
 // extended, so they are never targeted — no allowlist needed.
 export function checkTemplate(relPath, content) {
-  if (!content.includes("{% extends 'base.twig' %}")) return null;
+  // Tolerant of quote style and Twig whitespace-control, because the guard's
+  // real audience is derivative sites where that authoring drift appears.
+  if (!/\{%-?\s*extends\s+['"]base\.twig['"]/.test(content)) return null;
   const lines = content.split('\n');
   for (let i = 0; i < lines.length; i++) {
     if (lines[i].includes('<header')) {
