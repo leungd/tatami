@@ -60,10 +60,12 @@ src/js/main.js         → JS entry point — imports CSS, initializes modules
 - Defined in `.editorconfig` — respect it
 
 ### Comments
-Comment to explain context, never to narrate the change. A comment should read the same whether the code was written today or a year ago — it explains *why the code is the way it is* (a non-obvious constraint, a gotcha, a deliberate-looking-wrong decision), not what a given edit did.
+Comment only to record something the code cannot state for itself — a non-obvious constraint, a gotcha, a deliberate-looking-wrong decision. A comment reads the same whether written today or a year ago: it states the constraint, not what an edit did or how you arrived at it.
 - **Don't** reference the task, the fix, or the prior state: no `// changed to…`, `// now uses…`, `// added guard for…`, `// fix:…`, `// previously we…`. Git records what changed and when; the file shouldn't.
 - **Do** write comments that stand on their own and stay true independent of history: `// ACF is optional — this path runs when the plugin is absent`.
-- When in doubt, prefer no comment over a changelog comment. If the code needs explaining, explain the code, not the diff.
+- **Sparse, not decorative.** Never add banner or section-divider comments (`// ===== Helpers =====`, `/* --- Config --- */`, `# ----------`) or a running play-by-play that narrates your reasoning or restates what each line plainly does. Rows of comment scaffolding read as machine-generated and bury the few notes that carry real information.
+- **File/unit headers are the one exception.** A reusable unit — macro, partial, module, `lib/` class — may open with a header comment giving its purpose, parameters, and a short usage example (see the `{# … #}` block atop `views/macros/image.twig`). That documents an *interface*, worth stating once. Comments *inside* the body still follow the sparse rule.
+- When in doubt, omit. Prefer no comment over filler.
 
 ## How to do common tasks
 
@@ -215,6 +217,30 @@ The theme includes a custom `.fluid-grid` — a 12-column CSS Grid with named li
 - Grid lines: `full-start`, `content-start`, `col-1`–`col-12`, `content-end`, `full-end`
 - Place items using arbitrary grid-column values: `col-[content-start/content-end]`, `col-[col-3/col-10]`, `col-[full-start/full-end]`
 - Use the grid for page-level layout. Use Tailwind's `grid` and `flex` for component-level layout.
+
+**`.fluid-grid` places its _direct children_ only** (that's how CSS Grid works — `col-[…]` on a grandchild does nothing). So put `.fluid-grid` on the section, give each region **one** placed wrapper, and let that region's content flow *inside* it with normal flow (`space-y-*`, flex) — don't stamp `col-[…]` on every element.
+
+```twig
+{# GOOD — one placed wrapper; children flow inside it #}
+<section class="fluid-grid py-24">
+  <div class="col-[content-start/content-end] space-y-8 lg:col-[col-3/col-11]">
+    <p class="text-sm font-bold">{{ __('/ Section', 'tatami') }}</p>
+    <h2 class="font-display text-5xl">{{ post.title }}</h2>
+    <div class="prose max-w-none">{{ post.content|raw }}</div>
+  </div>
+</section>
+
+{# BAD — same placement stamped on every sibling; space-y-8 on a leaf is a no-op #}
+<section class="py-24">
+  <div class="fluid-grid">
+    <p  class="col-[content-start/content-end] space-y-8 lg:col-[col-3/col-11] …">…</p>
+    <h2 class="col-[content-start/content-end] space-y-8 lg:col-[col-3/col-11] …">…</h2>
+    <div class="col-[content-start/content-end] space-y-8 lg:col-[col-3/col-11] …">…</div>
+  </div>
+</section>
+```
+
+Two tells you got it wrong: the same `col-[…]` string on more than one sibling (wrap them in a single placed `<div>` instead), or `space-y-*` on an element with no children to space (it belongs on the flowing parent). A region that genuinely spans *different* columns than its neighbor is its own placed child — `partials/hero.twig` is the reference: a full-bleed `heroMedia` (`col-[full-start/full-end]`) beside a content-column body.
 
 ### Fluid typography
 Custom `clamp()`-based type scale defined as CSS variables (`--text-xs` through `--text-6xl`). Applied to headings in base styles. Use these for consistent responsive sizing.
