@@ -385,6 +385,122 @@ Expected: commit succeeds.
 
 ---
 
+## Task 4: Give content-less listing/utility pages an `<h1>` + harden the guardrail
+
+**Origin:** the final whole-branch review found that demoting the hero title to `<p>` leaves `archive`, `search`, `404`, and the blog `index` headingless — their router-set `title` was previously the page's only `<h1>`, and they have no WYSIWYG body to supply one (a WCAG 1.3.1/2.4.6 regression). Two Minor guardrail-robustness notes are folded in.
+
+**Files:**
+- Modify: `views/archive.twig`, `views/search.twig`, `views/404.twig`, `views/index.twig`
+- Modify: `scripts/lint-templates.mjs` (tolerant extends match)
+- Modify: `scripts/lint-templates.test.mjs` (add a test for the tolerant match)
+- Modify: `AGENTS.md` ("Hero (house tool)" section)
+
+**Interfaces:**
+- Consumes: `partials/hero.twig` with blocks `heroMedia`/`heroBody` (Task 1); `checkTemplate` (Task 2).
+- Produces: the four listing/utility templates render `<h1>{{ title }}</h1>` via a `heroBody` override; `checkTemplate` now matches `extends` tolerantly.
+
+- [ ] **Step 1: Promote the title to `<h1>` on the four listing/utility templates**
+
+For **each** of `views/archive.twig`, `views/search.twig`, `views/404.twig`, `views/index.twig`, add a `{% block hero %}` override immediately after the `{% extends 'base.twig' %}` line (before the existing `{% block content %}`), leaving the rest of each file unchanged:
+
+```twig
+{% block hero %}
+  {% embed 'partials/hero.twig' with { title } %}
+    {% block heroBody %}<h1>{{ title }}</h1>{% endblock %}
+  {% endembed %}
+{% endblock %}
+```
+
+Rationale: on these pages the `title` *is* the heading. `content` pages (`page`/`single`/`front-page`) are NOT touched — they keep the default `<p>` label and get their `<h1>` from the WYSIWYG body.
+
+- [ ] **Step 2: Confirm Prettier + the guardrail accept the edited templates**
+
+Run:
+```bash
+pnpm format
+pnpm lint
+```
+Expected: `pnpm format` exits 0 with no parser error; `pnpm lint` stays clean (the embed contains no literal `<header` — the shell lives in `hero.twig` — so no false positive).
+
+- [ ] **Step 3: Write the failing test for tolerant `extends` matching**
+
+Add this test to `scripts/lint-templates.test.mjs`:
+
+```js
+test('flags <header> even when extends uses double quotes and whitespace control', () => {
+  const content = [
+    '{%- extends "base.twig" -%}',
+    '{% block hero %}',
+    '  <header class="fluid-grid"><h1>{{ title }}</h1></header>',
+    '{% endblock %}',
+  ].join('\n');
+  assert.deepEqual(checkTemplate('views/single-x.twig', content), {
+    file: 'views/single-x.twig',
+    line: 3,
+  });
+});
+```
+
+- [ ] **Step 4: Run it and watch it fail**
+
+Run:
+```bash
+node --test 'scripts/*.test.mjs'
+```
+Expected: FAIL — the new test errors because the current exact-substring check (`content.includes("{% extends 'base.twig' %}")`) does not match the double-quoted, whitespace-controlled form, so `checkTemplate` returns `null` instead of the violation.
+
+- [ ] **Step 5: Make the extends match tolerant**
+
+In `scripts/lint-templates.mjs`, replace the exact-substring guard:
+
+```js
+  if (!content.includes("{% extends 'base.twig' %}")) return null;
+```
+with a tolerant regex (single/double quotes + optional whitespace-control):
+
+```js
+  // Tolerant of quote style and Twig whitespace-control, because the guard's
+  // real audience is derivative sites where that authoring drift appears.
+  if (!/\{%-?\s*extends\s+['"]base\.twig['"]/.test(content)) return null;
+```
+
+- [ ] **Step 6: Run the full spec suite green**
+
+Run:
+```bash
+node --test 'scripts/*.test.mjs'
+```
+Expected: PASS — 5 tests, 0 failures (the four original + the new tolerant-match test).
+
+- [ ] **Step 7: Update the AGENTS.md "Hero (house tool)" section**
+
+In the "### Hero (house tool)" section, after the existing a11y paragraph, add:
+
+```markdown
+On content-less listing/utility pages (`archive`, `search`, `404`, the blog `index`) the router-set `title` *is* the page heading — those base templates override `heroBody` to render `<h1>{{ title }}</h1>` (a working reference for the pattern). Content pages keep the `<p>` label and get their `<h1>` from the WYSIWYG body. Note the guardrail also disallows a per-section `<article><header>` inside a page template — push that markup into a module (modules never extend `base.twig`); page-level meta belongs in `heroBody`.
+```
+
+- [ ] **Step 8: Full verification + commit**
+
+Run:
+```bash
+pnpm lint && pnpm test
+```
+Expected: ESLint clean, hero-check clean, 5/5 tests pass.
+
+```bash
+git add views/archive.twig views/search.twig views/404.twig views/index.twig scripts/lint-templates.mjs scripts/lint-templates.test.mjs AGENTS.md
+git commit -m "fix: give listing/utility pages an h1, harden extends match
+
+archive/search/404/index override heroBody to render the title as <h1>
+(they have no WYSIWYG body to supply one). The guardrail's extends check
+now tolerates quote style and whitespace-control for derivative sites.
+
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
+```
+
+---
+
 ## Final verification (whole plan)
 
 - [ ] **Step 1: Full lint + test pass**

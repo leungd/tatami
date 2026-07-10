@@ -56,9 +56,25 @@ output stays byte-identical, so `base.twig` and every current template are unaff
 
 Key decisions:
 
-- **The hero title is a label (`<p>`), not the page heading.** The theme does not use
-  the page title as the `<h1>`. The page's single `<h1>` is the derivative's
-  responsibility, rendered in its content/module region (see a11y note below).
+- **The hero title is a label (`<p>`) on content pages, but the page heading (`<h1>`)
+  on content-less listing/utility pages.** On `page`/`single`/`front-page` the WYSIWYG
+  body carries the real `<h1>`, so the hero title is a label. But `archive`, `search`,
+  `404`, and the blog `index` have no `post.content` and their router-set `title`
+  (e.g. "Category: …", "Search results for …") *is* the page's heading — leaving it a
+  `<p>` would ship those pages headingless (a WCAG 1.3.1/2.4.6 regression against the
+  theme's own AA posture). So those four base templates override `heroBody` to render
+  `<h1>{{ title }}</h1>`, using the exact embed pattern this work promotes:
+
+  ```twig
+  {% block hero %}
+    {% embed 'partials/hero.twig' with { title } %}
+      {% block heroBody %}<h1>{{ title }}</h1>{% endblock %}
+    {% endembed %}
+  {% endblock %}
+  ```
+
+  The default (`heroBody` = `<p>`) stays label-shaped; the listing/utility templates opt
+  into the heading. This makes the base a working reference for both consumption shapes.
 - **Plain `<p>{{ title }}</p>`, no class hook.** Lean base; derivatives style the label
   by overriding `heroBody` or via their own CSS.
 - **Only the two slots the base actually renders** (`heroMedia`, `heroBody`). No
@@ -89,8 +105,17 @@ deps — recursive `readdir`, no glob library) wired into `pnpm lint`.
 
 **Single, airtight rule:**
 
-> A `.twig` file that contains `{% extends 'base.twig' %}` must not contain a
-> `<header` token.
+> A `.twig` file that extends `base.twig` must not contain a `<header` token.
+
+The extends match is tolerant of realistic authoring drift — single or double quotes and
+Twig whitespace-control (`{%- extends "base.twig" -%}`) — via the regex
+`/\{%-?\s*extends\s+['"]base\.twig['"]/`, because the guardrail's real audience is
+derivative sites, which is exactly where that drift appears. (Deeper indirection — a page
+that extends an intermediate `base-narrow.twig` which extends `base.twig` — is out of
+scope; the base ships no such layout.) The `<header` match is a plain substring: this
+also, by design, disallows per-section `<article><header>` inside a page template — such
+markup belongs in a module (modules never extend base), and page-level meta belongs in
+`heroBody`.
 
 Rationale: the hero shell is `<header class="fluid-grid">`. A page template that writes
 its own `<header>` is reproducing the hero — exactly the anti-pattern. Card/article
