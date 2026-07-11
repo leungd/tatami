@@ -111,9 +111,16 @@ Every page's hero renders from `partials/hero.twig`, pulled in by `{% block hero
 {% endblock %}
 ```
 
-The hero title is a **label (`<p>`), not the page heading** — the theme does not use the page title as the `<h1>`. Each page's single `<h1>` is the derivative's responsibility, rendered in the content region; in practice the `<h1>` content writers add to the WYSIWYG body (`post.content`) covers it. `pnpm lint` fails any page template that hand-rolls a `<header>`.
+**Exactly one `<h1>` per page, on the semantically-primary heading.** The hero title is a label (`<p>`) whenever the `<h1>` lives elsewhere; it is promoted to the `<h1>` only when the title is itself the whole heading (e.g. a person's name, or a utility/listing page). Each page's single `<h1>` is the derivative's responsibility. Two clarifications:
 
-On content-less listing/utility pages (`archive`, `search`, `404`, the blog `index`) the router-set `title` *is* the page heading — those base templates override `heroBody` to render `<h1>{{ title }}</h1>` (a working reference for the pattern). Content pages keep the `<p>` label and get their `<h1>` from the WYSIWYG body. Note the guardrail also disallows a per-section `<article><header>` inside a page template — push that markup into a module (modules never extend `base.twig`); page-level meta belongs in `heroBody`.
+- The `<h1>` may come from the WYSIWYG body (`post.content`) **or a dedicated ACF heading field**. Structured CPT singles have no WYSIWYG `<h1>` — they render an ACF field as the body `<h1>` and keep the hero title as the `<p>` label (reference: the LK site's `single-service.twig`, where the `intro_statement` ACF field is the body `<h1>`).
+- **Heading level is semantic, not visual.** A `<p class="text-6xl">` name above an `<h1 class="text-5xl">` keyword line is correct markup. Do not equate "biggest text" with "the `<h1>`."
+
+Why it matters: SEO is core business for this shop — the content team writes one keyword-rich `<h1>` per page ("Dynamic advocate and advisor in high-profile public interest and public law matters"), distinct from the short page title. Promoting the short title to `<h1>` starves the keyword heading.
+
+On content-less listing/utility pages (`archive`, `search`, `404`, the blog `index`) the router-set `title` *is* the whole heading — those base templates override `heroBody` to render `<h1>{{ title }}</h1>` (a working reference for the promotion case). Content pages keep the `<p>` label and get their `<h1>` from the body.
+
+`pnpm lint` enforces a **floor only**: it fails any page template that hand-rolls a `<header>`, including a per-section `<article><header>` — push that markup into a module (modules never extend `base.twig`); page-level meta belongs in `heroBody`. The guardrail is blind to `<h1>` placement — a template that inverts the heading rule still passes lint; that check happens in review (see "Definition of done").
 
 ### Add a reusable module
 1. Create `views/modules/{name}.twig`
@@ -122,7 +129,7 @@ On content-less listing/utility pages (`archive`, `search`, `404`, the blog `ind
 4. Guard on the data so the module no-ops when it's absent (`{% if services %}…{% endif %}`). This lets the same module be dropped into any template; it only renders where the router supplied data.
 
 ### Add a reusable query
-Reusable post queries live as **static methods on `Tatami\Queries`** (`lib/Queries.lib.php`), never inline in router files. This keeps query logic in one place, lets multiple routers share it (e.g. `front-page.php` and `single.php` both fetch services), and keeps the `Tatami\Site` class focused on setup rather than data fetching.
+Any post query with custom args lives as a **static method on `Tatami\Queries`** (`lib/Queries.lib.php`), named for intent — **even if only one router calls it**. Routers only ever call named `Queries` methods or the bare default `Timber::get_posts()` (the main loop); trivial default-loop queries stay inline. A `Queries` method is a boundary, not a speculative reuse hook — the class's purpose is router thinness, not just reuse, so a single-caller method does not violate "no abstractions for single-use code." Centralizing keeps query logic in one place, lets routers share it when they do overlap (e.g. `front-page.php` and `single.php` both fetch services), and keeps the `Tatami\Site` class focused on setup rather than data fetching.
 ```php
 // lib/Queries.lib.php
 namespace Tatami;
@@ -158,6 +165,14 @@ Extract the *markup*, never the styling. A long utility string is a signal to re
 for one of the above, not to write a CSS class — the utilities stay just as visible,
 only in one place.
 
+### Icons & SVG assets
+Pick the shape by asset class:
+- **Uniform, single-color, name-selected glyphs** (UI icons, simple social marks) → a macro (`macros/icon.twig`): one shared `currentColor` shell, selected by name.
+- **Bespoke or multi-color artwork with its own dimensions** (logos, illustrations) → a per-file partial under `views/svg/`, included raw.
+- Decision tell: can it be one `currentColor`, and is it one of many uniform glyphs? → macro. Multi-color bespoke? → file. Route social icons through the macro — keep them themeable.
+
+Sanctioned sources: **Lucide** for UI glyphs (ISC, `lucide-static`) and **Simple Icons** for brand/social marks (CC0). Their scopes are non-overlapping by design — Lucide ships no brand logos. Two expectations to hold: brand marks are trademarks (nominative use is fine) and can be pulled upstream (LinkedIn was), so the occasional hand-drawn fallback is normal; and Lucide (outline) won't stroke-match Simple Icons (solid) — that mismatch is expected, not a bug.
+
 ### Add global context
 Edit `add_to_context()` in `lib/Site.lib.php`. Available everywhere in Twig:
 - `{{ site }}` — Timber site object
@@ -189,9 +204,14 @@ const MyFeature = (() => {
 3. For larger features, create separate files in `src/js/` and import them
 
 ### Add custom fonts
+Self-hosted fonts (the default):
 1. Install via pnpm: `pnpm add @fontsource-variable/{font-name}`
 2. Import in `src/js/main.js`: `import '@fontsource-variable/{font-name}'`
 3. Set in `src/css/tailwind.css` under `@theme`: `--font-display: "{Font Name} Variable", sans-serif`
+
+Hosted fonts that can't be self-hosted (Adobe Fonts / Typekit): register their own `wp_enqueue_style` in `Site.lib.php` — never by editing `Assets.lib.php`.
+
+The underlying distinction: `Vite.lib.php` + `Assets.lib.php` are **base plumbing** — keep them pristine so they diff clean against the base. `Site.lib.php` + `Queries.lib.php` are the **site surface** — extend them freely (CPTs, taxonomies, hooks, queries, and hosted-font enqueues all live here).
 
 ### Add brand colors
 Define in `src/css/tailwind.css` under `@theme`:
@@ -267,7 +287,7 @@ templating can't solve:
 - PHP 8.0+ syntax — use typed properties, union types, match expressions, named arguments where appropriate
 - All theme logic in `lib/` classes, never in `functions.php` (it's just a bootstrapper)
 - All `lib/` classes live in the `Tatami\` namespace
-- Reusable post queries go in `Tatami\Queries` (`lib/Queries.lib.php`) as static methods — never inline `Timber::get_posts([...])` in a router file when more than one place needs it. Add new lib files to the `require_once` list in `functions.php`.
+- Post queries with custom args go in `Tatami\Queries` (`lib/Queries.lib.php`) as intent-named static methods — a router never inlines a custom `Timber::get_posts([...])`, even for a single caller (see "Add a reusable query"). Add new lib files to the `require_once` list in `functions.php`.
 - ACF is an optional dependency — always guard with `function_exists('get_fields')` or similar
 - Never use `wp_head`/`wp_footer` action hooks for inline styles or scripts — use the Vite pipeline
 - Register all hooks in class constructors
@@ -331,7 +351,7 @@ The base ships a semantic skeleton in `header.twig` (`<nav aria-label="Primary">
 - Comments are disabled site-wide in the base; a site that genuinely needs them removes the three comment filters and the admin-menu removal in `Tatami\Site::__construct()`.
 - Author archives return 404 (`Tatami\Site::disable_author_archives()`) — unused on client sites and an enumeration vector. A site that needs them removes that hook and uses `Timber::get_user()`.
 - Password-protected content renders Timber's password form (filter enabled in `Tatami\Site::__construct()`).
-- Front-end titles are entity-decoded (`Tatami\Site::decode_title_entities()`, hooked on `the_title` at `template_redirect` time) so Twig's autoescape encodes them exactly once — WP's default filter chain pre-encodes ampersands and emits numeric references for quotes/dashes, which would otherwise double-encode. The hook is deliberately scoped to front-end template rendering; REST and feed output keep WP's encoding.
+- Front-end titles are entity-decoded (`Tatami\Site::decode_title_entities()`, hooked on `the_title` at `template_redirect` time) so Twig's autoescape encodes them exactly once — WP's default filter chain pre-encodes ampersands and emits numeric references for quotes/dashes, which would otherwise double-encode. The hook is deliberately scoped to front-end template rendering; REST and feed output keep WP's encoding. The site name gets the same treatment in `add_to_context()` (`get_bloginfo('name')` pre-encodes too).
 
 ## Build & dev workflow
 
@@ -374,6 +394,8 @@ pnpm format           # Prettier (JS, CSS, Twig)
 
 Before calling any template work complete, load and eyeball — with `WP_DEBUG` on: the front page, the blog home *with more than one page of posts* (pagination must render), a category archive, a search with results and with none, and a 404. Run one keyboard-only pass: skip link, full nav including any submenus, focus visible throughout.
 
+Confirm exactly one `<h1>` per page, on the keyword/primary heading, with the page title as a `<p>` label unless the title is the whole heading (see "Hero"). This check lives in review, not CI — the lint guardrail only catches hand-rolled `<header>`s and is blind to `<h1>` placement; it will pass a template that inverts the heading rule.
+
 ## Doc integrity
 
 AGENTS.md must describe the repo as it is. If a change makes a statement in AGENTS.md false (files, behavior, versions, security posture), updating AGENTS.md is part of the change.
@@ -384,12 +406,12 @@ When building a new site on Tatami:
 1. Copy the base theme to a new project
 2. Define brand colors and fonts in `src/css/tailwind.css` `@theme` block
 3. Register custom post types and taxonomies in `lib/Site.lib.php`
-4. Set up ACF field groups — use `acf-json/` for version control (local JSON)
+4. Set up ACF field groups — use `acf-json/` for version control (local JSON). **Namespace group and field keys with a short site prefix** (`lk_`, `jm_`, …) — e.g. `group_lk_service`, `field_lk_service_intro_statement`. ACF keys are a global namespace within a WP install (unique across the theme, every plugin, and ACF's own auto-keys); unprefixed generic keys (`group_service`, `field_image`) risk silent last-one-wins collisions. Never rename ACF keys on a live site — field values are stored in the DB keyed by the field key, so renaming orphans existing content. The prefix rule is going-forward; existing unprefixed sites are grandfathered.
 5. Build page templates in `views/` following the naming conventions above
 6. Extract reusable sections into `views/modules/` and `views/partials/`
 7. Add JS interactivity in `src/js/main.js` using the module pattern
 8. Add reusable queries to `Tatami\Queries` (`lib/Queries.lib.php`), then call them from the appropriate router file and assign to context
-9. **Backport rule:** when site work reveals a fix that isn't site-specific (a11y helpers, Timber API corrections, structural CSS, security gating), flag it for backport to the base theme before the project wraps — keep a `BACKPORT.md` list in the site repo.
+9. **Backport rule:** the site repo keeps a `BACKPORT.md` list of fixes that aren't site-specific (a11y helpers, Timber API corrections, structural CSS, security gating). Whenever a session makes a change it judges non-site-specific, it appends the bullet to `BACKPORT.md` itself — don't rely on the human to remember. Never treat `BACKPORT.md` as complete: it's the primary write-time capture, not the full truth; a periodic drift audit against the base is the backstop for what slips through.
 
 ## Agent skills
 

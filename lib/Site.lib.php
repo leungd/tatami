@@ -136,6 +136,11 @@ class Site extends TimberSite {
      * @param string $context context['this'] Being the Twig's {{ this }}.
      */
     public function add_to_context( $context ) {
+        // get_bloginfo('name') pre-encodes entities; decode so Twig's
+        // autoescape encodes the site name exactly once, mirroring
+        // decode_title_entities() for post titles.
+        $this->name = html_entity_decode( $this->name, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+
         $context['menu']  = Timber::get_menu('primary');
         $context['site']  = $this;
 
