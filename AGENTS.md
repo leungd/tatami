@@ -378,8 +378,6 @@ Before calling any template work complete, load and eyeball — with `WP_DEBUG` 
 
 AGENTS.md must describe the repo as it is. If a change makes a statement in AGENTS.md false (files, behavior, versions, security posture), updating AGENTS.md is part of the change.
 
-**Process artifacts** (audits, specs, implementation plans) may be committed to `docs/` while the work is in flight, but are pruned from HEAD when the work lands — the repo tip stays product-only. Tag before pruning (e.g. `audit-2026-07`); retrieve later via `git show <tag>:docs/<file>`. AGENTS.md and CLAUDE.md are product documentation, not process artifacts — they stay.
-
 ## Extending for a new site
 
 When building a new site on Tatami:
@@ -392,3 +390,17 @@ When building a new site on Tatami:
 7. Add JS interactivity in `src/js/main.js` using the module pattern
 8. Add reusable queries to `Tatami\Queries` (`lib/Queries.lib.php`), then call them from the appropriate router file and assign to context
 9. **Backport rule:** when site work reveals a fix that isn't site-specific (a11y helpers, Timber API corrections, structural CSS, security gating), flag it for backport to the base theme before the project wraps — keep a `BACKPORT.md` list in the site repo.
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked as GitHub issues in `leungd/tatami` via the `gh` CLI; external PRs are not a triage surface. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Canonical triage roles map 1:1 to their default label strings (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
