@@ -153,7 +153,7 @@ Rules:
 
 ### Add a Twig macro
 1. Create or edit files in `views/macros/`
-2. Import in templates: `{% from 'macros/image.twig' import acf_image %}`
+2. Import in templates: `{% from 'macros/image.twig' import image %}`
 3. Use macros for repeated HTML patterns that need parameters (images, buttons, cards)
 
 **Card-like patterns have three shapes — pick by how content is supplied:**
@@ -191,6 +191,38 @@ public function add_to_context($context) {
     $context['services'] = Timber::get_posts([...]); // don't do this
 }
 ```
+
+### ACF fields (house conventions)
+
+**Plugin.** ACF Pro, installed from advancedcustomfields.com — never Secure Custom Fields (the wp.org fork: a diverging codebase, not a drop-in, and it deactivates ACF Pro on activation), never both. ACF stays an optional dependency (see PHP rules): PHP guards plus template truthiness let a site render, degraded, without it.
+
+**`acf-json/` is the sole author.** Field groups are hand-authored JSON files in `acf-json/` (committed), loaded by ACF automatically — no PHP registration, no `save_json`/`load_json` filters, and the admin field-group editor is never used to create, edit, or sync a group. A group synced into the DB makes the admin editor show a copy that the JSON silently overrides at runtime — if one appears, delete the DB copy. Author the files minimal: 2-space per `.editorconfig`, only the settings that matter (ACF fills defaults at load), no `modified` timestamp — it exists to drive the sync UI this workflow forbids.
+
+**Keys and names.** Group keys are `group_<site>_<slug>`; field keys are `field_<site>_<group-abbrev>_<name>` (`field_lk_fp_hero_heading`, `fp` = front page). Keys are a global namespace within a WP install — unique across the theme, every plugin, and ACF's own auto-keys — so the site prefix is mandatory. Field *names* stay unprefixed and human-readable (`hero_heading`): names are what templates read, and a deliberately shared name lets one module consume the same shape from different groups (two `testimonials` repeaters on different post types, one module). Never rename a live field's key **or** name — values sit in postmeta under the name with a paired `_`-row referencing the key, so either rename orphans content. The prefix rule is going-forward; existing unprefixed sites are grandfathered.
+
+**Return formats.** Media and relational fields return **IDs** (`return_format: id` on image, gallery, post_object, relationship), hydrated at the point of use: the house `image()` macro takes an ID directly; `get_image(id)`, `get_post(id)` / `get_posts(ids)` cover the rest. IDs keep every image on the house renderer and dodge a known Timber v2 rough edge with array-format images inside nested structures. `link` fields return `array` (`url`/`title`/`target`) — no Timber wrapper exists for them. Textareas store plain text (`new_lines: ""`) and render with `|nl2br` — never `wpautop`, which forces `|raw` onto a plain-text field. WYSIWYG fields use the `basic` toolbar with `media_upload: 0`, and are the only per-post fields rendered with `|raw` (see Security).
+
+**Modeling.** Fixed fields per template, organized with `tab` fields, matching the design's sections. Flexible content only when a site genuinely needs editor-arranged sections (layouts map to `modules/{layout}.twig`); ACF Blocks are out of scope for this classic theme. Repeaters are for bounded, order-matters lists owned by one page (testimonials, offices, social links); anything queryable, listable, or unbounded is a CPT, and filterable groupings are a taxonomy (ACF fields on terms are fine — read them via `get_term_meta()` where ACF-optional code needs the value). Never nest repeaters. `show_in_rest: 0` unless a group deliberately feeds the REST API. No `required` fields — templates guard on truthiness and sections no-op when empty, the same contract modules follow — except sub-fields inside a repeater row, where a half-filled row is meaningless. Use `instructions` to tell editors what the template will do (fallbacks, image-count expectations, "this is the page's H1").
+
+**Options page.** One per site, and only when the site has global settings. Register it in `Site.lib.php` (site surface) on `acf/init`, guarded; define its fields in `group_<site>_site_settings.json` with an `options_page == site-settings` location; consume as `{{ options.x }}` from the global context. Keep the page lean — it loads on every request (see "Add global context"). `'autoload' => true` folds the option rows into WP's autoload query instead of one query per field:
+
+```php
+public function register_options_page(): void {
+    if ( ! function_exists( 'acf_add_options_page' ) ) {
+        return;
+    }
+    acf_add_options_page( array(
+        'page_title' => __( 'Site Settings', 'tatami' ),
+        'menu_title' => __( 'Site Settings', 'tatami' ),
+        'menu_slug'  => 'site-settings',
+        'capability' => 'manage_options',
+        'redirect'   => false,
+        'autoload'   => true,
+    ) );
+}
+```
+
+**Reading fields.** Twig reads `post.meta('name')`; routers never call `get_field()` — per-post ACF data reaches templates through the Timber post object, options through `{{ options.x }}`. Call `meta()` once on a repeater or group field and use rows as plain properties (`item.title`) — never nest `meta()` on sub-fields. Shared modules guard repeaters with `{% if items is iterable and items is not empty %}`: with ACF deactivated, `post.meta()` on a repeater returns the raw row count, not rows. ACF 6.2.5+'s `the_field()`/shortcode escaping change is a non-event here (Timber themes use neither); never add `acf/…/allow_unsafe_html` filters.
 
 ### Add JavaScript functionality
 1. Create a module in `src/js/main.js` using the IIFE pattern:
@@ -300,7 +332,7 @@ templating can't solve:
 - Use `{% include %}` for partials and modules, `{% from %}` for macros, and
   `{% embed %}` for fragments that wrap caller-supplied markup (cards with slots, callouts)
 - Access post data via Timber objects: `{{ post.title }}`, `{{ post.content }}`, `{{ post.thumbnail }}`
-- Access ACF fields via: `{{ post.meta('field_name') }}` or `{{ options.field_name }}`
+- Access ACF fields via: `{{ post.meta('field_name') }}` or `{{ options.field_name }}` (see "ACF fields (house conventions)")
 - Use Twig filters for display logic: `{{ post.date | date('F j, Y') }}`
 - Never put PHP logic in Twig — if you need data transformation, do it in the PHP context
 - `pnpm format` formats all Twig templates except `views/base.twig` and `views/header.twig`,
@@ -345,7 +377,7 @@ The base ships a semantic skeleton in `header.twig` (`<nav aria-label="Primary">
 ## Security
 
 - Twig autoescaping is ON (`autoescape: 'html'`, set in `Tatami\Site::set_twig_environment_options()`): `{{ variable }}` escapes for HTML. Use `| raw` only for trusted HTML — `post.content`, `post.excerpt` (WYSIWYG output), and `site.language_attributes`. WordPress functions that echo (`function('wp_footer')`, `{% do action(...) %}`) bypass escaping; their output is WP's responsibility.
-- ACF fields that accept HTML should use `| raw` — plain text fields must not.
+- ACF fields that accept HTML (WYSIWYG) should use `| raw` — plain text fields must not; multi-line plain text renders via `|nl2br`, never `wpautop` + `|raw` (see "ACF fields (house conventions)").
 - SVG uploads are allowed for administrators only (`manage_options` gate in `Tatami\Site::add_svg_mime_type()`). Pair with a sanitizer plugin (e.g. Safe SVG) on client sites.
 - XML-RPC pingbacks are disabled in the base (`Tatami\Site::disable_xmlrpc_pingbacks()`).
 - Comments are disabled site-wide in the base; a site that genuinely needs them removes the three comment filters and the admin-menu removal in `Tatami\Site::__construct()`.
@@ -406,7 +438,7 @@ When building a new site on Tatami:
 1. Copy the base theme to a new project
 2. Define brand colors and fonts in `src/css/tailwind.css` `@theme` block
 3. Register custom post types and taxonomies in `lib/Site.lib.php`
-4. Set up ACF field groups — use `acf-json/` for version control (local JSON). **Namespace group and field keys with a short site prefix** (`lk_`, `jm_`, …) — e.g. `group_lk_service`, `field_lk_service_intro_statement`. ACF keys are a global namespace within a WP install (unique across the theme, every plugin, and ACF's own auto-keys); unprefixed generic keys (`group_service`, `field_image`) risk silent last-one-wins collisions. Never rename ACF keys on a live site — field values are stored in the DB keyed by the field key, so renaming orphans existing content. The prefix rule is going-forward; existing unprefixed sites are grandfathered.
+4. Set up ACF field groups per "ACF fields (house conventions)": hand-authored minimal JSON in `acf-json/` (committed), site-prefixed keys, ID return formats, no admin-UI authoring.
 5. Build page templates in `views/` following the naming conventions above
 6. Extract reusable sections into `views/modules/` and `views/partials/`
 7. Add JS interactivity in `src/js/main.js` using the module pattern
