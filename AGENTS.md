@@ -95,10 +95,11 @@ Routers for singular views assign `$context['featured_image'] = Tatami\Queries::
 
 ### Hero (house tool)
 
-Every page's hero renders from `partials/hero.twig`, pulled in by `{% block hero %}` in `base.twig`. **Never hand-roll a `<header>` in a `single-*` / `page-*` template** — override the block and reuse the partial. The partial exposes two named blocks so derivatives *extend* the shell instead of duplicating it:
+Every page's hero renders from `partials/hero.twig`, pulled in by `{% block hero %}` in `base.twig`. **Never hand-roll a `<header>` in a `single-*` / `page-*` template** — override the block and reuse the partial. The partial exposes named blocks so derivatives *extend* the shell instead of duplicating it:
 
 - `heroMedia` — the optional full-bleed featured image
 - `heroBody` — the title region (defaults to `<p>{{ title }}</p>`)
+- `heroClasses` / `heroBodyClasses` — extra classes on the `<header>` and the body wrapper, for heroes that overlay the body on the media (e.g. `row-start-1` on both regions for a full-bleed video hero)
 
 ```twig
 {% block hero %}
@@ -203,6 +204,10 @@ public function add_to_context($context) {
 **Return formats.** Media and relational fields return **IDs** (`return_format: id` on image, gallery, post_object, relationship), hydrated at the point of use: the house `image()` macro takes an ID directly; `get_image(id)`, `get_post(id)` / `get_posts(ids)` cover the rest. IDs keep every image on the house renderer and dodge a known Timber v2 rough edge with array-format images inside nested structures. `link` fields return `array` (`url`/`title`/`target`) — no Timber wrapper exists for them. Textareas store plain text (`new_lines: ""`) and render with `|nl2br` — never `wpautop`, which forces `|raw` onto a plain-text field. WYSIWYG fields use the `basic` toolbar with `media_upload: 0`, and are the only per-post fields rendered with `|raw` (see Security).
 
 **Modeling.** Fixed fields per template, organized with `tab` fields, matching the design's sections. Flexible content only when a site genuinely needs editor-arranged sections (layouts map to `modules/{layout}.twig`); ACF Blocks are out of scope for this classic theme. Repeaters are for bounded, order-matters lists owned by one page (testimonials, offices, social links); anything queryable, listable, or unbounded is a CPT, and filterable groupings are a taxonomy (ACF fields on terms are fine — read them via `get_term_meta()` where ACF-optional code needs the value). Never nest repeaters. `show_in_rest: 0` unless a group deliberately feeds the REST API. No `required` fields — templates guard on truthiness and sections no-op when empty, the same contract modules follow — except sub-fields inside a repeater row, where a half-filled row is meaningless. Use `instructions` to tell editors what the template will do (fallbacks, image-count expectations, "this is the page's H1").
+
+**Accented headings.** When a design accents words inside a heading (italic serif, highlight bar, brand color), the accent is `<em>`: the heading field is a basic-toolbar WYSIWYG and the theme styles `em` within that heading's scope. Editors italicize the word — no hand-authored spans, no split accent/rest fields; the styling degrades to plain italics without CSS.
+
+**Editability.** Editors own the message; the theme owns the interface. Field anything the client could plausibly ask to reword without a redesign — headings, body copy, blurbs, images, link targets (test: could marketing change this on a Tuesday without a designer looking at it?). Hardcode, through `__()`, anything that is interface rather than message: section order, UI microcopy (expand/collapse labels, "Read More", form labels, pagination), empty-state text — changing those is a design change and goes through code. Data-driven sections render from their sources (CPT/post queries); only their intro blurbs are fields — no curation fields ("pick which items appear") until a real need exists.
 
 **Options page.** One per site, and only when the site has global settings. Register it in `Site.lib.php` (site surface) on `acf/init`, guarded; define its fields in `group_<site>_site_settings.json` with an `options_page == site-settings` location; consume as `{{ options.x }}` from the global context. Keep the page lean — it loads on every request (see "Add global context"). `'autoload' => true` folds the option rows into WP's autoload query instead of one query per field:
 

@@ -1,6 +1,9 @@
 {% from 'macros/image.twig' import image %}
 {% if title %}
-  <header class="fluid-grid">
+  {# heroClasses / heroBodyClasses let a derivative overlay the body on the
+     media (e.g. row-start-1 on both regions for a full-bleed video hero)
+     without hand-rolling its own <header>. #}
+  <header class="fluid-grid {% block heroClasses %}{% endblock %}">
     {% block heroMedia %}
       {% if featured_image %}
         {{
@@ -14,7 +17,9 @@
         }}
       {% endif %}
     {% endblock %}
-    <div class="col-[content-start/content-end]">
+    <div
+      class="col-[content-start/content-end] {% block heroBodyClasses %}{% endblock %}"
+    >
       {% block heroBody %}
         <p>
           {{ title }}
