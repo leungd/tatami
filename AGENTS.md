@@ -4,6 +4,8 @@
 
 Tatami is a WordPress starter theme. Each site built on it is a **derivative** — the base stays lean, and site-specific code is added per project. Never add site-specific content (brand colors, client copy, hardcoded slugs) to the base theme.
 
+**Upstream is pull-down only.** A derivative pulls base updates from `leungd/tatami`; it never pushes, opens a pull request, or otherwise writes to that repo. The only upstream write allowed from a derivative is a GitHub issue (see "Issue tracker") for a bug or fix that belongs in the base. Base changes are made in the base checkout by its maintainer — a derivative's `upstream` remote has its push URL disabled for this reason.
+
 ## Stack
 
 | Layer | Tool | Notes |
@@ -440,7 +442,11 @@ AGENTS.md must describe the repo as it is. If a change makes a statement in AGEN
 ## Extending for a new site
 
 When building a new site on Tatami:
-1. Copy the base theme to a new project
+1. Clone the base theme into the new project, then rename the remote and disable its push URL so the derivative can only pull:
+   ```bash
+   git remote rename origin upstream
+   git remote set-url --push upstream DISABLED
+   ```
 2. Define brand colors and fonts in `src/css/tailwind.css` `@theme` block
 3. Register custom post types and taxonomies in `lib/Site.lib.php`
 4. Set up ACF field groups per "ACF fields (house conventions)": hand-authored minimal JSON in `acf-json/` (committed), site-prefixed keys, ID return formats, no admin-UI authoring.
@@ -448,18 +454,15 @@ When building a new site on Tatami:
 6. Extract reusable sections into `views/modules/` and `views/partials/`
 7. Add JS interactivity in `src/js/main.js` using the module pattern
 8. Add reusable queries to `Tatami\Queries` (`lib/Queries.lib.php`), then call them from the appropriate router file and assign to context
-9. **Backport rule:** the site repo keeps a `BACKPORT.md` list of fixes that aren't site-specific (a11y helpers, Timber API corrections, structural CSS, security gating). Whenever a session makes a change it judges non-site-specific, it appends the bullet to `BACKPORT.md` itself — don't rely on the human to remember. Never treat `BACKPORT.md` as complete: it's the primary write-time capture, not the full truth; a periodic drift audit against the base is the backstop for what slips through.
 
 ## Agent skills
 
+The base repo carries no `docs/` directory, `CONTEXT.md`, or ADRs. Agent skill config and decision records for base development live outside the checkout in the maintainer's working folder, so a derivative never pulls them down.
+
 ### Issue tracker
 
-Issues are tracked as GitHub issues in `leungd/tatami` via the `gh` CLI; external PRs are not a triage surface. See `docs/agents/issue-tracker.md`.
+Issues are tracked as GitHub issues in `leungd/tatami` via the `gh` CLI; external PRs are not a triage surface.
 
 ### Triage labels
 
-Canonical triage roles map 1:1 to their default label strings (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+Canonical triage roles map 1:1 to their default label strings (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`).
