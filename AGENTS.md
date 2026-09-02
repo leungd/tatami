@@ -125,6 +125,50 @@ On content-less listing/utility pages (`archive`, `search`, `404`, the blog `ind
 
 `pnpm lint` enforces a **floor only**: it fails any page template that hand-rolls a `<header>`, including a per-section `<article><header>` — push that markup into a module (modules never extend `base.twig`); page-level meta belongs in `heroBody`. The guardrail is blind to `<h1>` placement — a template that inverts the heading rule still passes lint; that check happens in review (see "Definition of done").
 
+### Related Posts (house tool)
+
+**Related Posts** are the blog posts a host page (a Service, a Lawyer, any post type) is allowed to show, chosen by the categories the host *subscribes to*. The host owns the rule; a post only carries its categories and never declares which pages it belongs to, so one post can appear on several hosts. This is not a "latest posts" list — an unconfigured host shows nothing, never a fallback to recent posts.
+
+The base ships the query; each site adds the field and the section markup.
+
+**Field (per site).** An ACF `taxonomy` field named `related_categories` on every host post type, with `save_terms: 0` — the host stores category IDs as its own meta and is never tagged *into* the category, so it stays out of category archives and counts. Never attach `category` to a CPT's `taxonomies` for this purpose. Recipe (`acf-json/group_<site>_related_posts.json`):
+
+```json
+{
+  "key": "group_<site>_related_posts",
+  "title": "Related Posts",
+  "fields": [
+    {
+      "key": "field_<site>_rp_related_categories",
+      "label": "Related Post Categories",
+      "name": "related_categories",
+      "type": "taxonomy",
+      "instructions": "Posts in these categories appear as Related Posts on this page. Leave empty to show none.",
+      "taxonomy": "category",
+      "field_type": "checkbox",
+      "add_term": 0,
+      "save_terms": 0,
+      "load_terms": 0,
+      "return_format": "id"
+    }
+  ],
+  "location": [[{ "param": "post_type", "operator": "==", "value": "service" }]]
+}
+```
+
+Add one location group per host post type. The field *name* is fixed — `Tatami\Queries::related_posts()` reads it.
+
+**Router.** One line in the host's singular router; the method short-circuits when nothing is subscribed and when ACF is absent:
+
+```php
+$context['related_posts'] = Tatami\Queries::related_posts( $post );        // 3 posts
+$context['related_posts'] = Tatami\Queries::related_posts( $post, 5 );     // or more
+```
+
+**Module (per site).** `modules/related-posts.twig`, guarded with `{% if related_posts is not empty %}` (the result is a Timber collection, which is truthy even when empty — `is not empty` is the guard, not `{% if related_posts %}`). The markup is the site's design; `partials/post-list.twig` is the reference consumer of a post list.
+
+**Migrating an older derivative** that attached `category` to its Service/Lawyer CPTs (Meridian): add the field, copy each host's current category assignments into `related_categories` with a one-off script *before* removing `category` from the CPT's `taxonomies` — dropping the taxonomy first orphans the assignments — then switch the router to `related_posts()`.
+
 ### Add a reusable module
 1. Create `views/modules/{name}.twig`
 2. Include it from page templates: `{% include 'modules/{name}.twig' with { data: someData } %}`

@@ -37,4 +37,34 @@ class Queries {
 
         return $image ?: null;
     }
+
+    /**
+     * Related Posts for a host page — a Service, a Lawyer, any post type
+     * carrying the `related_categories` ACF field (see AGENTS.md "Related
+     * Posts (house tool)"). Newest published posts in any category the host
+     * subscribes to. Returns an empty array when the host subscribes to
+     * nothing: WP treats an empty category__in as "no filter" and would
+     * otherwise return every post.
+     */
+    public static function related_posts( Post $host, int $count = 3 ): iterable {
+        // Without ACF the field is raw postmeta, not the ID array ACF returns.
+        $category_ids = $host->meta( 'related_categories' );
+        if ( ! is_array( $category_ids ) ) {
+            return array();
+        }
+
+        $category_ids = array_filter( array_map( 'intval', $category_ids ) );
+        if ( ! $category_ids ) {
+            return array();
+        }
+
+        return Timber::get_posts( array(
+            'post_type'      => 'post',
+            'posts_per_page' => $count,
+            'category__in'   => $category_ids,
+            'orderby'        => 'date',
+            'order'          => 'DESC',
+            'no_found_rows'  => true,
+        ) );
+    }
 }
