@@ -12,11 +12,23 @@
     From a Timber image object (e.g. context.featured_image):
     {{ image(featured_image, '100vw', 'w-full object-cover', 'eager', 'high') }}
 
+    Overriding the alt text (named argument — skips the positional ones):
+    {{ image(lawyer.meta('headshot'), '25vw', alt=lawyer.title) }}
+
   loading defaults to lazy — pass 'eager' for above-the-fold heroes.
   fetchpriority defaults to auto — pair 'eager' with 'high' for the LCP image.
+  alt defaults to the media-library alt field; pass alt when the template
+  knows better (a person's name on a headshot). Pass '' to force decorative.
   Empty media-library alt → alt="", the correct decorative-image behavior.
 #}
-{% macro image(image, sizes, class, loading = 'lazy', fetchpriority = 'auto') %}
+{% macro image(
+  image,
+  sizes,
+  class,
+  loading = 'lazy',
+  fetchpriority = 'auto',
+  alt = null)
+%}
   {% set img = get_image(image) %}
   {% if img %}
     <img
@@ -25,7 +37,7 @@
       sizes="{{ sizes|default('100vw') }}"
       width="{{ img.width }}"
       height="{{ img.height }}"
-      alt="{{ img.alt }}"
+      alt="{{ alt ?? img.alt }}"
       class="{{ class }}"
       loading="{{ loading }}"
       fetchpriority="{{ fetchpriority }}"
