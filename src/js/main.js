@@ -1,10 +1,8 @@
 /**
- * Tatami Theme - Main JavaScript
- *
- * @since 1.0.0
+ * Tatami entry point — imports the stylesheet and initializes JS modules
+ * once the DOM is ready.
  */
 
-// Import styles
 import '../css/tailwind.css';
 
 // =============================================================================
