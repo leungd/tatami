@@ -29,6 +29,7 @@ lib/Queries.lib.php    → Tatami\Queries class — reusable Timber queries (fea
 lib/Assets.lib.php     → Asset enqueueing via Vite integration
 lib/Vite.lib.php       → Tatami\Vite — Vite ↔ WordPress bridge (dev server detection, manifest reading)
 lib/Schema.lib.php     → Tatami\Schema — extends Yoast's schema graph (pure core + WordPress adapter); base plumbing
+lib/SocialProfiles.lib.php → Tatami\SocialProfiles — the Firm's social profiles from Yoast Site representation (pure)
 views/                 → All Twig templates
   base.twig            → Root HTML shell — all page templates extend this
   partials/            → Reusable fragments (head, hero, pagination, post-list)
@@ -255,6 +256,30 @@ Yoast SEO owns SEO output (house ADR): titles, meta descriptions, canonical, Ope
 <address class="not-italic">{{ address(options.address, true) }}</address>
 ```
 
+### Social profiles (house tool)
+
+The Firm's social profiles are entered in one place: **Yoast SEO → Settings → Site representation** (the Facebook and X fields plus "Other profiles"). Yoast already emits them as the Organization's `sameAs`; templates read the same list from `{{ social_profiles }}` (global context). Never add an ACF repeater for social links.
+
+Each item is `{ network, url }`. `network` is inferred from the URL host by `Tatami\SocialProfiles::network()` — `facebook`, `x`, `instagram`, `linkedin`, `youtube`, `tiktok`, `threads`, `bluesky`, `pinterest`, `wikipedia`, `avvo`, or `link` for any other host — so the site's `macros/icon.twig` needs one glyph per network it uses plus a generic `link` glyph. The X field stores a handle; the list carries the built `https://x.com/<handle>` URL. Order follows Yoast (Facebook, X, then Other profiles); duplicate URLs are listed once. Without Yoast the list is empty.
+
+```twig
+{% from 'macros/icon.twig' import icon %}
+{% if social_profiles is not empty %}
+  <ul class="flex gap-4">
+    {% for profile in social_profiles %}
+      <li>
+        <a href="{{ profile.url }}" target="_blank" rel="noopener noreferrer">
+          {{ icon(profile.network) }}
+          <span class="sr-only">{{ profile.network|capitalize }}</span>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+```
+
+**Migrating a site with an ACF `social_media_services` / `social_links` field:** enter each URL in Yoast → Site representation (Facebook, X handle, the rest under Other profiles), switch the footer loop to `social_profiles`, then delete the field from its group JSON in `acf-json/`.
+
 ### Add a reusable module
 1. Create `views/modules/{name}.twig`
 2. Include it from page templates: `{% include 'modules/{name}.twig' with { data: someData } %}`
@@ -311,8 +336,9 @@ Edit `add_to_context()` in `lib/Site.lib.php`. Available everywhere in Twig:
 - `{{ site }}` — Timber site object
 - `{{ menu }}` — primary nav menu
 - `{{ options }}` — ACF options page fields (if ACF active)
+- `{{ social_profiles }}` — list of `{ network, url }` from Yoast → Site representation (primary profiles, then Other profiles); `network` inferred from the host, `link` for unknown hosts; empty without Yoast (see "Social profiles")
 
-**Keep `add_to_context()` lean.** Only put data here that is truly needed on every page (menu, site, options). Page-specific queries belong in the PHP router file for that page, and the query itself lives in `Tatami\Queries` (see "Add a reusable query" below):
+**Keep `add_to_context()` lean.** Only put data here that is truly needed on every page (menu, site, options, social profiles). Page-specific queries belong in the PHP router file for that page, and the query itself lives in `Tatami\Queries` (see "Add a reusable query" below):
 ```php
 // GOOD — router calls a named query helper
 // front-page.php

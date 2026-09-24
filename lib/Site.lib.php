@@ -150,6 +150,11 @@ class Site extends TimberSite {
             $context['options'] = get_fields('option');
         }
 
+        // wpseo_social is autoloaded, so this adds no query.
+        $context['social_profiles'] = defined( 'WPSEO_VERSION' )
+            ? SocialProfiles::from_yoast( (array) get_option( 'wpseo_social', array() ) )
+            : array();
+
         return $context;
     }
 

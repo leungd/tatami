@@ -13,6 +13,7 @@ if ( PHP_SAPI !== 'cli' ) {
 }
 
 require_once __DIR__ . '/../lib/Schema.lib.php';
+require_once __DIR__ . '/../lib/SocialProfiles.lib.php';
 
 $failures = [];
 $passes   = 0;
