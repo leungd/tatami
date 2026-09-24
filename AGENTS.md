@@ -15,6 +15,7 @@ Tatami is a WordPress starter theme. Each site built on it is a **derivative** �
 | CSS | Tailwind CSS v4 | CSS-first config in `src/css/tailwind.css` — no `tailwind.config.js` |
 | Build | Vite 8 | Dev server with HMR, manifest-based production builds |
 | Fields | ACF Pro | Optional dependency — theme must work without it |
+| SEO | Yoast SEO | Required at launch by house policy (house ADR); owns head SEO output and the JSON-LD graph. Optional at runtime — the theme works without it |
 | PHP deps | Composer | Timber loaded via `vendor/autoload.php` |
 | JS deps | pnpm | Lockfile is `pnpm-lock.yaml` — never use npm or yarn |
 | Quality | ESLint + Prettier | Prettier has Twig + Tailwind plugins configured |
@@ -27,6 +28,7 @@ lib/Site.lib.php       → Tatami\Site class (extends Timber\Site) — CPTs, tax
 lib/Queries.lib.php    → Tatami\Queries class — reusable Timber queries (featured images, services, etc.)
 lib/Assets.lib.php     → Asset enqueueing via Vite integration
 lib/Vite.lib.php       → Tatami\Vite — Vite ↔ WordPress bridge (dev server detection, manifest reading)
+lib/Schema.lib.php     → Tatami\Schema — extends Yoast's schema graph (pure core + WordPress adapter); base plumbing
 views/                 → All Twig templates
   base.twig            → Root HTML shell — all page templates extend this
   partials/            → Reusable fragments (head, hero, pagination, post-list)
@@ -34,6 +36,7 @@ views/                 → All Twig templates
   modules/             → Self-contained content sections (services grid, map, etc.)
 src/css/tailwind.css   → Tailwind config + custom utilities + component styles
 src/js/main.js         → JS entry point — imports CSS, initializes modules
+tests/run.php          → Standalone PHP test runner for pure helpers (loads tests/test-*.php)
 ```
 
 ### Data flow
@@ -177,6 +180,81 @@ $context['related_posts'] = Tatami\Queries::related_posts( $post, 5 );     // or
 
 **Migrating an older derivative** that attached `category` to its Service/Lawyer CPTs (Meridian): add the field, copy each host's current category assignments into `related_categories` with a one-off script *before* removing `category` from the CPT's `taxonomies` — dropping the taxonomy first orphans the assignments — then switch the router to `related_posts()`.
 
+### Schema (house tool)
+
+Yoast SEO owns SEO output (house ADR): titles, meta descriptions, canonical, Open Graph, and the single JSON-LD graph. **The theme never prints JSON-LD, microdata, or head meta.** `Tatami\Schema` (`lib/Schema.lib.php`) adds the site's facts to Yoast's graph through the `wpseo_schema_graph` filter — never a second graph.
+
+- **Facts come from house-named ACF fields.** The field names below are fixed because `Tatami\Schema` reads them; keys stay site-prefixed.
+- **No-ops cleanly.** Without Yoast the filter is never registered; without ACF the graph passes through untouched. Empty fields leave Yoast's graph unchanged, and a graph with no Organization piece is returned as-is.
+- **Firm → Organization.** With the Firm fields filled, Yoast's Organization piece gains the Firm-type subtype on its `@type` (`legal` → `LegalService`, `accounting` → `AccountingService`, `financial` → `FinancialService`, anything else → `ProfessionalService`), a structured `PostalAddress`, `telephone`, `faxNumber`, and `email`.
+- **The pure core is the test seam.** `Tatami\Schema::extend( array $graph, array $facts ): array` takes Yoast's graph plus plain facts and returns the graph, with no WordPress/ACF/Yoast calls; the adapter only gathers facts. Test it through `tests/` (see "Build & dev workflow"), asserting on the returned graph.
+
+**Firm fields (per site).** Add these to the site's Site Settings group (`acf-json/group_<site>_site_settings.json`, see "Options page"):
+
+```json
+{
+  "key": "group_<site>_site_settings",
+  "title": "Site Settings",
+  "fields": [
+    {
+      "key": "field_<site>_ss_firm_type",
+      "label": "Firm Type",
+      "name": "firm_type",
+      "type": "select",
+      "instructions": "Tells search engines what kind of firm this is.",
+      "choices": {
+        "legal": "Law firm (LegalService)",
+        "accounting": "Accounting firm (AccountingService)",
+        "financial": "Financial firm (FinancialService)",
+        "professional": "Other professional firm (ProfessionalService)"
+      },
+      "default_value": "professional",
+      "return_format": "value"
+    },
+    {
+      "key": "field_<site>_ss_address",
+      "label": "Address",
+      "name": "address",
+      "type": "group",
+      "instructions": "The main office. Enter it exactly as the Google Business Profile shows it.",
+      "layout": "block",
+      "sub_fields": [
+        {
+          "key": "field_<site>_ss_street_address",
+          "label": "Street Address",
+          "name": "street_address",
+          "type": "text",
+          "instructions": "Include the suite or unit, as Google Business Profile writes it."
+        },
+        { "key": "field_<site>_ss_city", "label": "City", "name": "city", "type": "text" },
+        { "key": "field_<site>_ss_province", "label": "Province", "name": "province", "type": "text" },
+        { "key": "field_<site>_ss_postal_code", "label": "Postal Code", "name": "postal_code", "type": "text" },
+        {
+          "key": "field_<site>_ss_country",
+          "label": "Country",
+          "name": "country",
+          "type": "text",
+          "default_value": "Canada"
+        }
+      ]
+    },
+    { "key": "field_<site>_ss_phone_number", "label": "Phone Number", "name": "phone_number", "type": "text" },
+    { "key": "field_<site>_ss_fax_number", "label": "Fax Number", "name": "fax_number", "type": "text" },
+    { "key": "field_<site>_ss_email_address", "label": "Email Address", "name": "email_address", "type": "email" }
+  ],
+  "location": [[{ "param": "options_page", "operator": "==", "value": "site-settings" }]]
+}
+```
+
+### Address (house tool)
+
+`macros/address.twig` renders an `address` group in the Canadian format Google Business Profile uses, so the visible address matches the listing and the schema: single-line `100 King St W Suite 5600, Toronto, ON M5X 1C9`, or with `multiline` the street, `<br>`, then `Toronto, ON  M5X 1C9`. Empty parts are skipped, country is not displayed (it exists for schema), and it emits no wrapper element — the caller places it.
+
+```twig
+{% from 'macros/address.twig' import address %}
+<address class="not-italic">{{ address(options.address, true) }}</address>
+```
+
 ### Add a reusable module
 1. Create `views/modules/{name}.twig`
 2. Include it from page templates: `{% include 'modules/{name}.twig' with { data: someData } %}`
@@ -302,7 +380,7 @@ Self-hosted fonts (the default):
 
 Hosted fonts that can't be self-hosted (Adobe Fonts / Typekit): register their own `wp_enqueue_style` in `Site.lib.php` — never by editing `Assets.lib.php`.
 
-The underlying distinction: `Vite.lib.php` + `Assets.lib.php` are **base plumbing** — keep them pristine so they diff clean against the base. `Site.lib.php` + `Queries.lib.php` are the **site surface** — extend them freely (CPTs, taxonomies, hooks, queries, and hosted-font enqueues all live here).
+The underlying distinction: `Vite.lib.php` + `Assets.lib.php` + `Schema.lib.php` are **base plumbing** — keep them pristine so they diff clean against the base. `Site.lib.php` + `Queries.lib.php` are the **site surface** — extend them freely (CPTs, taxonomies, hooks, queries, and hosted-font enqueues all live here).
 
 ### Add brand colors
 Define in `src/css/tailwind.css` under `@theme`:
@@ -453,8 +531,11 @@ pnpm dev              # Start Vite dev server (HMR, full-page reload on PHP/Twig
 pnpm build            # Production build → build/ directory with manifest
 pnpm preview          # Preview production build locally
 pnpm lint             # ESLint + Twig hero-guardrail (no page template may hand-roll a <header>)
+pnpm test             # Node linter tests, then PHP schema tests (php tests/run.php)
 pnpm format           # Prettier (JS, CSS, Twig)
 ```
+
+`tests/run.php` runs with plain `php` — no WordPress, no PHPUnit — and exits without output unless run from the CLI. It loads the pure libs under test, then every `tests/test-*.php`, and exits 1 on any failure. Shared helpers: `assert_equal()`, `assert_true()`, and `yoast_graph_fixture( 'post' | 'front' )`, a realistic Yoast 22+ graph.
 
 ### How Vite integration works
 - **Dev:** Vite writes `build/hot` file → `Vite.lib.php` detects it → assets served from dev server with HMR
@@ -479,6 +560,7 @@ pnpm format           # Prettier (JS, CSS, Twig)
 - **No direct database queries** — use WordPress/Timber APIs
 - **No `echo` in PHP template files** — all output goes through Twig
 - **No npm or yarn** — this project uses pnpm exclusively
+- **No hand-written JSON-LD, microdata, or head meta** — Yoast owns SEO output; extend its graph via `Tatami\Schema`
 - **No hand-rolled page headers** — a `single-*`/`page-*` template must not contain its own `<header>`; override `{% block hero %}` and reuse `partials/hero.twig` (enforced by `pnpm lint`)
 
 ## Definition of done (template work)
@@ -502,10 +584,11 @@ When building a new site on Tatami:
 2. Define brand colors and fonts in `src/css/tailwind.css` `@theme` block
 3. Register custom post types and taxonomies in `lib/Site.lib.php`
 4. Set up ACF field groups per "ACF fields (house conventions)": hand-authored minimal JSON in `acf-json/` (committed), site-prefixed keys, ID return formats, no admin-UI authoring.
-5. Build page templates in `views/` following the naming conventions above
-6. Extract reusable sections into `views/modules/` and `views/partials/`
-7. Add JS interactivity in `src/js/main.js` using the module pattern
-8. Add reusable queries to `Tatami\Queries` (`lib/Queries.lib.php`), then call them from the appropriate router file and assign to context
+5. Copy the Firm field recipe (see "Schema (house tool)") into the site's Site Settings group, with the site's key prefix
+6. Build page templates in `views/` following the naming conventions above
+7. Extract reusable sections into `views/modules/` and `views/partials/`
+8. Add JS interactivity in `src/js/main.js` using the module pattern
+9. Add reusable queries to `Tatami\Queries` (`lib/Queries.lib.php`), then call them from the appropriate router file and assign to context
 
 ## Agent skills
 

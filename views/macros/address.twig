@@ -1,0 +1,37 @@
+{#
+  House address renderer. Assembles an ACF `address` group (street_address,
+  city, province, postal_code, country) into the Canadian format Google
+  Business Profile uses, so the visible address matches the listing and the
+  schema. Country is not displayed. Empty parts are skipped; no wrapper
+  element — the caller places it.
+
+    {% from 'macros/address.twig' import address %}
+
+    Single line — "100 King St W Suite 5600, Toronto, ON M5X 1C9":
+    <p>{{ address(options.address) }}</p>
+
+    Two lines — street, then "Toronto, ON  M5X 1C9", joined by <br>:
+    <address class="not-italic">{{ address(options.address, true) }}</address>
+#}
+{% macro address(address, multiline = false) %}
+  {%- if address -%}
+    {%- set region =
+      [address.province, address.postal_code]
+        |filter(part => part)
+        |join(multiline ? '  ' : ' ')
+    -%}
+    {%- set locality =
+      [address.city, region]|filter(part => part)|join(', ')
+    -%}
+    {%- if multiline -%}
+      {{-
+        [address.street_address|e, locality|e]
+          |filter(line => line)
+          |join('<br>')
+          |raw
+      -}}
+    {%- else -%}
+      {{- [address.street_address, locality]|filter(part => part)|join(', ') -}}
+    {%- endif -%}
+  {%- endif -%}
+{% endmacro %}

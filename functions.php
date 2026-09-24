@@ -11,6 +11,7 @@ require_once __DIR__ . '/lib/Vite.lib.php';
 require_once __DIR__ . '/lib/Assets.lib.php';
 require_once __DIR__ . '/lib/Queries.lib.php';
 require_once __DIR__ . '/lib/Site.lib.php';
+require_once __DIR__ . '/lib/Schema.lib.php';
 
 Timber\Timber::init();
 
@@ -18,4 +19,5 @@ Timber\Timber::init();
 Timber::$dirname = ['views'];
 
 new Tatami\Site();
+new Tatami\Schema();
 new Tatami\Assets();
