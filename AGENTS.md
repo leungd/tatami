@@ -30,12 +30,12 @@ lib/Assets.lib.php     → Asset enqueueing via Vite integration
 lib/Vite.lib.php       → Tatami\Vite — Vite ↔ WordPress bridge (dev server detection, manifest reading)
 lib/Schema.lib.php     → Tatami\Schema — extends Yoast's schema graph (pure core + WordPress adapter); base plumbing
 lib/Attribution.lib.php → Tatami\Attribution — a blog post's public credit (Firm / Written by / Reviewed by); base plumbing
-lib/SocialProfiles.lib.php → Tatami\SocialProfiles — the Firm's social profiles from Yoast Site representation (pure)
+lib/SocialProfiles.lib.php → Tatami\SocialProfiles — the Firm's social profiles from Yoast Site representation (pure); base plumbing
 views/                 → All Twig templates
   base.twig            → Root HTML shell — all page templates extend this
   partials/            → Reusable fragments (head, hero, pagination, post-list)
-  macros/              → Twig macros for repeated patterns (images, nav items)
-  modules/             → Self-contained content sections (services grid, map, etc.)
+  macros/              → Twig macros for repeated patterns (images, addresses)
+  modules/             → Self-contained content sections (FAQs, services grid, map, etc.)
 src/css/tailwind.css   → Tailwind config + custom utilities + component styles
 src/js/main.js         → JS entry point — imports CSS, initializes modules
 tests/run.php          → Standalone PHP test runner for pure helpers (loads tests/test-*.php)
@@ -46,7 +46,7 @@ tests/run.php          → Standalone PHP test runner for pure helpers (loads te
 1. WordPress routes request → PHP template file (e.g., `page.php`)
 2. PHP file builds Timber context, calls `Timber::render('page.twig', $context)`
 3. Twig template extends `base.twig`, overrides blocks with page-specific content
-4. Global context (menu, site, ACF options) injected via `add_to_context()` in `Site.lib.php`
+4. Global context (menu, site, ACF options, social profiles) injected via `add_to_context()` in `Site.lib.php`
 
 ## File conventions
 
@@ -661,7 +661,7 @@ Self-hosted fonts (the default):
 
 Hosted fonts that can't be self-hosted (Adobe Fonts / Typekit): register their own `wp_enqueue_style` in `Site.lib.php` — never by editing `Assets.lib.php`.
 
-The underlying distinction: `Vite.lib.php` + `Assets.lib.php` + `Schema.lib.php` + `Attribution.lib.php` are **base plumbing** — keep them pristine so they diff clean against the base. `Site.lib.php` + `Queries.lib.php` are the **site surface** — extend them freely (CPTs, taxonomies, hooks, queries, and hosted-font enqueues all live here).
+The underlying distinction: `Vite.lib.php` + `Assets.lib.php` + `Schema.lib.php` + `Attribution.lib.php` + `SocialProfiles.lib.php` are **base plumbing** — keep them pristine so they diff clean against the base. `Site.lib.php` + `Queries.lib.php` are the **site surface** — extend them freely (CPTs, taxonomies, hooks, queries, and hosted-font enqueues all live here).
 
 ### Add brand colors
 Define in `src/css/tailwind.css` under `@theme`:
@@ -812,7 +812,7 @@ pnpm dev              # Start Vite dev server (HMR, full-page reload on PHP/Twig
 pnpm build            # Production build → build/ directory with manifest
 pnpm preview          # Preview production build locally
 pnpm lint             # ESLint + Twig hero-guardrail (no page template may hand-roll a <header>)
-pnpm test             # Node linter tests, then PHP schema tests (php tests/run.php)
+pnpm test             # Node linter tests, then PHP tests of the pure helpers (php tests/run.php)
 pnpm format           # Prettier (JS, CSS, Twig)
 ```
 
@@ -849,6 +849,39 @@ pnpm format           # Prettier (JS, CSS, Twig)
 Before calling any template work complete, load and eyeball — with `WP_DEBUG` on: the front page, the blog home *with more than one page of posts* (pagination must render), a category archive, a search with results and with none, and a 404. Run one keyboard-only pass: skip link, full nav including any submenus, focus visible throughout.
 
 Confirm exactly one `<h1>` per page, on the keyword/primary heading, with the page title as a `<p>` label unless the title is the whole heading (see "Hero"). This check lives in review, not CI — the lint guardrail only catches hand-rolled `<header>`s and is blind to `<h1>` placement; it will pass a template that inverts the heading rule.
+
+Check the schema on the front page, a Professional, a Service, a post (one in each Attribution state the site uses), and a page with FAQs:
+
+- The page carries exactly one JSON-LD graph — Yoast's `<script type="application/ld+json" class="yoast-schema-graph">` — and no other `application/ld+json` block or `itemscope` microdata (see "Schema").
+- Paste the graph into the [Rich Results Test](https://search.google.com/test/rich-results) or the [Schema Markup Validator](https://validator.schema.org/); it passes.
+
+With JavaScript off (view-source or `curl`), the key content is in the page source: headings, body copy, FAQ answers, the Professional's name and job title, the address. Nothing that matters is injected by script.
+
+Confirm AI search/retrieval bots are not blocked, in `robots.txt` (Yoast generates it) or at the host/CDN (e.g. Cloudflare's "Block AI bots" toggle).
+
+## Launch checklist
+
+Set these on production before launch; each says where it lives.
+
+- [ ] **Yoast SEO is active** (Plugins). House policy — without it the base outputs no schema.
+- [ ] **Site representation** (Yoast SEO → Settings → Site representation): Organization, not Person; organisation name; logo; social profiles (Facebook, X handle, Other profiles). The same list feeds `{{ social_profiles }}` and the Organization's `sameAs` (see "Social profiles").
+- [ ] **Author archives off** (Yoast SEO → Settings → Advanced → Author archives). The theme already 404s them; this also drops them from the sitemaps and Yoast's graph.
+- [ ] **Professional page type = Profile page** (Yoast SEO → Settings → Content types → the Professional post type → Schema → Page type).
+- [ ] **llms.txt enabled** (Yoast SEO → Settings → Site features → llms.txt) and regenerated on production once content is final. Never ship a locally generated file.
+- [ ] **Search/retrieval AI bots allowed**: `robots.txt` has no `Disallow` for them, and the host/CDN does not block them (Cloudflare → Security → Bots → "Block AI bots" off, or an allow rule for the retrieval agents). Training bots (GPTBot, ClaudeBot, Google-Extended, CCBot, …) are allowed by default unless the client decides otherwise — record the client's decision.
+- [ ] **Firm fields filled** (Site Settings): Firm type; the main Office address exactly as the Google Business Profile shows it; phone, fax, email; Offices only if there is more than one; Area served (see "Schema").
+- [ ] **Schema checks run** — the Definition-of-done schema checks, on the pages listed there.
+
+### Migrating an older derivative
+
+Adopt the house tools in this order; each step's details live in that tool's own migration note:
+
+1. Declare legacy post types with the `tatami/schema/post_types` filter — "Schema (house tool)", **Post types**.
+2. Adopt the house field names: Firm fields on Site Settings, splitting a single-box address and copying `locations` into `offices` — "Schema (house tool)", **Migrating an older derivative's office fields**.
+3. Enter the social profiles in Yoast and retire the ACF repeater — "Social profiles (house tool)".
+4. Replace hand-rolled FAQ JSON-LD/microdata with the `faqs` field and module — "FAQs (house tool)".
+5. Move Boulby/Willis-style attribution onto `Tatami\Attribution` — "Attribution (house tool)".
+6. Run the Launch checklist.
 
 ## Doc integrity
 
