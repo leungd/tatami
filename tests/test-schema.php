@@ -389,3 +389,68 @@ assert_equal( 'WebPage', $extended[ $webpage_index ]['@type'], 'Professional wit
 
 $no_webpage = array_values( array_slice( $front, 1 ) );
 assert_equal( $no_webpage, Schema::extend( $no_webpage, [ 'page' => $faq_page ] ), 'FAQs without a WebPage piece -> graph unchanged' );
+
+// --- Attribution -------------------------------------------------------------
+
+function attribution_facts( string $state, ?string $url, string $name = 'Jane Doe' ): array {
+    return [ 'page' => [ 'kind' => 'post', 'attribution' => [ 'state' => $state, 'name' => $name, 'url' => $url ] ] ];
+}
+
+function schema_people( array $graph ): array {
+    return array_values( array_filter( $graph, fn( $piece ) => in_array( 'Person', (array) ( $piece['@type'] ?? [] ), true ) ) );
+}
+
+$post_graph  = yoast_graph_fixture( 'post' );
+$user_person = end( $post_graph )['@id'];
+$org_ref     = [ '@id' => $org_id ];
+$person_ref  = [ '@id' => $person_id ];
+
+$firm_graph = Schema::extend( $post_graph, attribution_facts( 'firm', null, 'Example Law' ) );
+assert_equal( $org_ref, $firm_graph[0]['author'] ?? null, 'firm -> Article author is the Organization' );
+assert_equal( [], schema_people( $firm_graph ), 'firm -> no Person piece in the graph' );
+assert_true( ! str_contains( json_encode( $firm_graph, JSON_UNESCAPED_SLASHES ), '/author/' ), 'firm -> no author-archive URL in the graph' );
+assert_true( ! array_key_exists( 'reviewedBy', $firm_graph[1] ), 'firm -> no reviewedBy' );
+assert_equal( array_keys( $firm_graph ), range( 0, count( $firm_graph ) - 1 ), 'firm -> graph re-indexed' );
+assert_equal( count( $post_graph ) - 1, count( $firm_graph ), 'firm -> only the user Person removed' );
+
+$written = Schema::extend( $post_graph, attribution_facts( 'written_by', $pro_url ) );
+assert_equal( $person_ref, $written[0]['author'] ?? null, 'written_by -> Article author is the Professional Person' );
+assert_equal(
+    [ [ '@type' => 'Person', '@id' => $person_id, 'name' => 'Jane Doe', 'url' => $pro_url ] ],
+    schema_people( $written ),
+    'written_by -> one Person piece: the Professional, user Person removed'
+);
+assert_true( null === schema_piece( $written, $user_person ), 'written_by -> user-derived Person removed' );
+assert_true( ! str_contains( json_encode( $written, JSON_UNESCAPED_SLASHES ), '/author/' ), 'written_by -> no author-archive URL in the graph' );
+assert_true( ! array_key_exists( 'reviewedBy', $written[1] ), 'written_by -> no reviewedBy' );
+$profile_person = schema_people( Schema::extend( $pro_graph, [ 'page' => $minimal_pro ] ) )[0]['@id'] ?? null;
+assert_equal( $profile_person, $written[0]['author']['@id'] ?? null, 'written_by -> author @id equals the profile page Person @id' );
+
+$reviewed = Schema::extend( $post_graph, attribution_facts( 'reviewed_by', $pro_url ) );
+assert_equal( $org_ref, $reviewed[0]['author'] ?? null, 'reviewed_by -> Article author is the Organization' );
+assert_equal( $person_ref, $reviewed[1]['reviewedBy'] ?? null, 'reviewed_by -> WebPage reviewedBy the Person' );
+assert_equal( [ $person_id ], array_column( schema_people( $reviewed ), '@id' ), 'reviewed_by -> Professional Person present, user Person removed' );
+assert_true( ! str_contains( json_encode( $reviewed, JSON_UNESCAPED_SLASHES ), '/author/' ), 'reviewed_by -> no author-archive URL in the graph' );
+
+assert_equal( $firm_graph, Schema::extend( $post_graph, attribution_facts( 'written_by', null, 'Example Law' ) ), 'written_by without a Professional url -> same as firm' );
+assert_equal( $firm_graph, Schema::extend( $post_graph, attribution_facts( 'reviewed_by', '', 'Example Law' ) ), 'reviewed_by with an empty url -> same as firm' );
+assert_equal( $firm_graph, Schema::extend( $post_graph, attribution_facts( 'ghostwritten', $pro_url, 'Example Law' ) ), 'unknown state -> same as firm' );
+
+$page_author              = $post_graph;
+$page_author[1]['author'] = [ '@id' => $user_person ];
+$extended                 = Schema::extend( $page_author, attribution_facts( 'written_by', $pro_url ) );
+assert_equal( $person_ref, $extended[1]['author'] ?? null, 'written_by -> WebPage author (when present) is the Person' );
+$extended = Schema::extend( $page_author, attribution_facts( 'firm', null ) );
+assert_equal( $org_ref, $extended[1]['author'] ?? null, 'firm -> WebPage author (when present) is the Organization' );
+assert_true( ! array_key_exists( 'author', $firm_graph[1] ), 'WebPage without author gains none' );
+
+$extended = Schema::extend( $post_graph, [ 'page' => attribution_facts( 'reviewed_by', $pro_url )['page'] + [ 'faqs' => $faq_rows ] ] );
+assert_equal( $org_ref, $extended[0]['author'] ?? null, 'Attribution + FAQs -> author applied' );
+assert_equal( $person_ref, $extended[1]['reviewedBy'] ?? null, 'Attribution + FAQs -> reviewedBy applied' );
+assert_equal( [ 'WebPage', 'FAQPage' ], $extended[1]['@type'], 'Attribution + FAQs -> WebPage gains FAQPage' );
+assert_equal( $faq_questions, $extended[1]['mainEntity'] ?? null, 'Attribution + FAQs -> mainEntity Questions' );
+
+$post_no_org = array_values(
+    array_filter( $post_graph, fn( $piece ) => ( $piece['@id'] ?? null ) !== $org_id )
+);
+assert_equal( $post_no_org, Schema::extend( $post_no_org, attribution_facts( 'written_by', $pro_url ) ), 'Attribution without Organization -> graph unchanged' );

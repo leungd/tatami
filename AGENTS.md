@@ -29,6 +29,7 @@ lib/Queries.lib.php    → Tatami\Queries class — reusable Timber queries (fea
 lib/Assets.lib.php     → Asset enqueueing via Vite integration
 lib/Vite.lib.php       → Tatami\Vite — Vite ↔ WordPress bridge (dev server detection, manifest reading)
 lib/Schema.lib.php     → Tatami\Schema — extends Yoast's schema graph (pure core + WordPress adapter); base plumbing
+lib/Attribution.lib.php → Tatami\Attribution — a blog post's public credit (Firm / Written by / Reviewed by); base plumbing
 lib/SocialProfiles.lib.php → Tatami\SocialProfiles — the Firm's social profiles from Yoast Site representation (pure)
 views/                 → All Twig templates
   base.twig            → Root HTML shell — all page templates extend this
@@ -186,7 +187,7 @@ $context['related_posts'] = Tatami\Queries::related_posts( $post, 5 );     // or
 Yoast SEO owns SEO output (house ADR): titles, meta descriptions, canonical, Open Graph, and the single JSON-LD graph. **The theme never prints JSON-LD, microdata, or head meta.** `Tatami\Schema` (`lib/Schema.lib.php`) adds the site's facts to Yoast's graph through the `wpseo_schema_graph` filter — never a second graph.
 
 - **Facts come from house-named ACF fields.** The field names below are fixed because `Tatami\Schema` reads them; keys stay site-prefixed.
-- **No-ops cleanly.** Without Yoast the filter is never registered; without ACF the graph passes through untouched. Empty fields leave Yoast's graph unchanged, and a graph with no Organization piece is returned as-is.
+- **No-ops cleanly.** Without Yoast the filter is never registered; without ACF the only change is a post's Attribution, which falls back to the Firm. Empty fields leave Yoast's graph unchanged, and a graph with no Organization piece is returned as-is.
 - **Firm → Organization.** With the Firm fields filled, Yoast's Organization piece gains the Firm-type subtype on its `@type` (`legal` → `LegalService`, `accounting` → `AccountingService`, `financial` → `FinancialService`, anything else → `ProfessionalService`), a structured `PostalAddress`, `telephone`, `faxNumber`, and `email`.
 - **Offices.** The Address above is the main office. Each additional Office (`offices` repeater — empty on a single-office site) becomes its own piece with the Firm's `@type`, a stable `@id` (`<home>/#/schema/office/<slug of name>`, or the 1-based row number when unnamed — renaming an Office changes its `@id`), `name`, a structured `address`, `telephone`, `faxNumber`, `email`, and `parentOrganization` → the Firm. The Organization lists them in row order as `department`. Office pieces are appended after Yoast's, leaving Yoast's order intact.
 - **Area served.** `area_served` rows become the Organization's `areaServed`, a plain list of place names in row order. One list for the whole Firm — every Service inherits it; empty adds nothing.
@@ -197,6 +198,7 @@ Yoast SEO owns SEO output (house ADR): titles, meta descriptions, canonical, Ope
   ```
 - **Professional → Person.** On a Professional single, a Person piece is appended after Yoast's (and any Office pieces) with a stable `@id` (`<profile URL>#person`), `name`, `url`, `worksFor` → the Firm, `jobTitle` (`job_title`), `sameAs` (`profile_links`), `knowsAbout` (the published `services`, each as a Service with `@id` `<service URL>#service`, `name`, `url`), and `image` → Yoast's `#primaryimage` (the featured image) when the graph has one. Empty fields omit their properties. The Person is the page's main entity: Yoast's WebPage piece gains `mainEntity` → the Person. Yoast's schema page type for Professionals is set to **Profile page** in Yoast's settings (Content types → the Professional post type → Schema) — a Launch checklist item, not code.
 - **FAQs.** On any singular with `faqs` rows, Yoast's WebPage piece gains `FAQPage` and one Question per row in `mainEntity` — see "FAQs (house tool)".
+- **Attribution.** On a blog post the Article's `author` follows the post's Attribution (the Firm's Organization or the Professional's Person), `reviewedBy` marks a reviewing Professional, and Yoast's user-derived Person is removed — see "Attribution (house tool)".
 - **The pure core is the test seam.** `Tatami\Schema::extend( array $graph, array $facts ): array` takes Yoast's graph plus plain facts and returns the graph, with no WordPress/ACF/Yoast calls; the adapter only gathers facts. Test it through `tests/` (see "Build & dev workflow"), asserting on the returned graph.
 
 **Firm fields (per site).** Add these to the site's Site Settings group (`acf-json/group_<site>_site_settings.json`, see "Options page"):
@@ -438,6 +440,98 @@ FAQ rich results have been restricted to authoritative government and health sit
 
 **Migrating an older derivative** (Hicks Adams, McCay Duff, Getz Collins, Meridian) off in-template JSON-LD and microdata FAQs: add the field and move each page's Q&A into the `faqs` repeater (McCay Duff's block-based FAQs need a one-off content migration script), delete the hand-rolled `<script type="application/ld+json">` / `itemscope` FAQ markup and any FAQ schema class, and include the module.
 
+### Attribution (house tool)
+
+A blog post's **Attribution** is the credit it publicly carries: the Firm itself, "Written by" a Professional, or "Reviewed by" a Professional — never the WordPress user who entered the post. Every public credit surface (the visible byline, Yoast's author meta, the share card, the schema graph) derives from one resolver, `Tatami\Attribution` (`lib/Attribution.lib.php`).
+
+**States.** `firm` (the default), `written_by`, `reviewed_by`.
+
+**Resolver.** `Tatami\Attribution::resolve( $post_id )` returns `{ state, label, name, url }`:
+
+- `firm` → label "Written on behalf of", name the site title (Settings → General), url `null`.
+- `written_by` / `reviewed_by` → label "Written by" / "Reviewed by", name the `attribution_name` field (else the Professional's title), url the Professional's profile permalink.
+- A personal credit needs a **published Professional** (`attribution_person`, of the Professional post type from `Tatami\Schema::post_types()`). No Professional, a draft/trashed one, or an unknown state → the Firm. Without ACF every post credits the Firm.
+
+`single.php` puts the result in the `attribution` context key on posts, labels already translated. The base's `single.twig` renders a minimal credit in `heroBody` after the dates; the markup is per site:
+
+```twig
+{% if attribution %}
+  <p class="text-sm">
+    <span>{{ attribution.label }}</span>
+    {% if attribution.url %}
+      <a href="{{ attribution.url }}">{{ attribution.name }}</a>
+    {% else %}
+      {{ attribution.name }}
+    {% endif %}
+  </p>
+{% endif %}
+```
+
+**Yoast.** `<meta name="author">` and the share card's "Written by" row (`twitter:label1`/`twitter:data1`) carry the resolved label and name. The WordPress Author box is hidden in the admin and removed from the REST API (where the block editor reads it) so there is no second, wrong place to assign credit; post author support stays on the front end because Yoast skips Article schema for a post type without it.
+
+**Schema.** Through `Tatami\Schema`, per state:
+
+- `firm` → the Article's `author` (and the WebPage's, when Yoast sets one) → the Organization.
+- `written_by` → `author` → the Professional's Person.
+- `reviewed_by` → `author` → the Organization; the WebPage gains `reviewedBy` → the Professional's Person.
+- A credited Professional is appended as a minimal Person (`name`, `url`) whose `@id` is `<profile URL>#person` — the same `@id` as the Person on that Professional's profile page, so author and profile are one Entity (the full description lives on the profile page).
+- In every state Yoast's user-derived Person (`…/#/schema/person/<hash>`) is removed, so no WordPress user or author-archive URL appears in a post's graph.
+
+**Field (per site).** `acf-json/group_<site>_attribution.json`. The field *names* are fixed — `Tatami\Attribution` reads them. `attribution_name` is written from the Professional's title on save. A legacy site changes the person field's `post_type` to its own Professional post type.
+
+```json
+{
+  "key": "group_<site>_attribution",
+  "title": "Attribution",
+  "position": "acf_after_title",
+  "fields": [
+    {
+      "key": "field_<site>_attr_state",
+      "label": "Attribution",
+      "name": "attribution_state",
+      "type": "radio",
+      "instructions": "The one public credit this post carries. It drives the byline, the share-card author, and structured data.",
+      "default_value": "firm",
+      "choices": {
+        "firm": "Written on behalf of the firm",
+        "written_by": "Written by a specific person",
+        "reviewed_by": "Reviewed by a specific person"
+      }
+    },
+    {
+      "key": "field_<site>_attr_person",
+      "label": "Credited Professional",
+      "name": "attribution_person",
+      "type": "post_object",
+      "instructions": "The byline links to their profile. If they are unpublished later, the post credits the firm.",
+      "post_type": ["professional"],
+      "post_status": ["publish"],
+      "allow_null": 1,
+      "return_format": "id",
+      "conditional_logic": [[{ "field": "field_<site>_attr_state", "operator": "!=", "value": "firm" }]]
+    },
+    {
+      "key": "field_<site>_attr_name",
+      "label": "Credited Name",
+      "name": "attribution_name",
+      "type": "text",
+      "instructions": "Auto-filled from the credited Professional on save.",
+      "conditional_logic": [[{ "field": "field_<site>_attr_state", "operator": "!=", "value": "firm" }]]
+    }
+  ],
+  "location": [[{ "param": "post_type", "operator": "==", "value": "post" }]]
+}
+```
+
+**Migrating Boulby Weinberg and Willis Business Law (new)** off their own attribution class:
+
+1. Delete the site's attribution class (its `require_once` and instantiation) and its `wpseo_meta_author`, `wpseo_enhanced_slack_data`, and `wpseo_schema_graph` filters — the base registers the first two and `Tatami\Schema` owns the graph.
+2. Keep the existing field group and its keys; confirm the three field *names* are `attribution_state`, `attribution_person`, `attribution_name` (they are on Willis). Change the person field's `post_type` if needed.
+3. If the Professional post type is legacy (`lawyer`), add the `tatami/schema/post_types` line in `Site.lib.php` (see "Schema").
+4. Point the byline templates at the `attribution` context key.
+
+The credited Person's `@id` changes from a hash of the name to the profile's `<profile URL>#person` — a one-time change in the graph, intended. A credit typed as a name alone, for someone without a published profile, now falls back to the Firm.
+
 ### Add a reusable module
 1. Create `views/modules/{name}.twig`
 2. Include it from page templates: `{% include 'modules/{name}.twig' with { data: someData } %}`
@@ -564,7 +658,7 @@ Self-hosted fonts (the default):
 
 Hosted fonts that can't be self-hosted (Adobe Fonts / Typekit): register their own `wp_enqueue_style` in `Site.lib.php` — never by editing `Assets.lib.php`.
 
-The underlying distinction: `Vite.lib.php` + `Assets.lib.php` + `Schema.lib.php` are **base plumbing** — keep them pristine so they diff clean against the base. `Site.lib.php` + `Queries.lib.php` are the **site surface** — extend them freely (CPTs, taxonomies, hooks, queries, and hosted-font enqueues all live here).
+The underlying distinction: `Vite.lib.php` + `Assets.lib.php` + `Schema.lib.php` + `Attribution.lib.php` are **base plumbing** — keep them pristine so they diff clean against the base. `Site.lib.php` + `Queries.lib.php` are the **site surface** — extend them freely (CPTs, taxonomies, hooks, queries, and hosted-font enqueues all live here).
 
 ### Add brand colors
 Define in `src/css/tailwind.css` under `@theme`:

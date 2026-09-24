@@ -18,6 +18,10 @@ $context['featured_image'] = Tatami\Queries::featured_image_with_fallback( $post
 
 $context['tag'] = 'article';
 
+if ( 'post' === $post->post_type ) {
+    $context['attribution'] = Tatami\Attribution::resolve( $post->ID );
+}
+
 Timber::render(array(
     'single-' . $post->slug . '.twig',
     'single-' . $post->post_type . '.twig',

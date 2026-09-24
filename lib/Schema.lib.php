@@ -11,7 +11,8 @@
  *   calls: this is the test seam (tests/run.php loads this file under
  *   plain `php`).
  * - Adapter — registers the filter when Yoast is active and gathers facts
- *   from the house-named ACF fields. No-ops without Yoast or ACF.
+ *   from the house-named ACF fields and Tatami\Attribution. No-ops without
+ *   Yoast; without ACF only a post's Attribution (the Firm) applies.
  *
  * Facts shape (every key optional; empty facts leave the graph unchanged):
  *
@@ -33,6 +34,13 @@
  *       'profile_links' => [ 'https://…', … ],
  *       'services'      => [ [ 'name', 'url' ], … ],  // url with trailing slash; Service @id is <url>#service
  *       'faqs'          => [ [ 'question' => 'plain text', 'answer' => '<p>html</p>' ], … ],  // present on any singular
+ *     ],
+ *     // or, on a blog post:
+ *     'page' => [
+ *       'kind'        => 'post',
+ *       'attribution' => [ 'state' => 'written_by', 'name' => 'Jane Doe', 'url' => 'https://example.com/team/jane-doe/' ],
+ *                        // firm | written_by | reviewed_by; url is the Professional's profile (null for firm); Person @id is <url>#person
+ *       'faqs'        => [ … ],
  *     ],
  *   ]
  *
@@ -69,18 +77,31 @@ class Schema {
     }
 
     public function filter_graph( $graph, $context ) {
-        if ( ! is_array( $graph ) || ! function_exists( 'get_field' ) ) {
+        if ( ! is_array( $graph ) ) {
             return $graph;
         }
 
-        $facts = [ 'firm' => $this->firm_facts() ];
+        $queried  = get_queried_object();
+        $singular = $queried instanceof \WP_Post && is_singular();
+        $facts    = [];
 
-        $queried = get_queried_object();
-        if ( $queried instanceof \WP_Post && is_singular() ) {
-            $facts['page'] = [ 'kind' => 'page', 'faqs' => $this->faq_facts( $queried ) ];
-            if ( is_singular( self::post_types()['professional'] ) ) {
-                $facts['page'] = $this->professional_facts( $queried ) + $facts['page'];
+        if ( function_exists( 'get_field' ) ) {
+            $facts['firm'] = $this->firm_facts();
+            if ( $singular ) {
+                $facts['page'] = [ 'kind' => 'page', 'faqs' => $this->faq_facts( $queried ) ];
+                if ( is_singular( self::post_types()['professional'] ) ) {
+                    $facts['page'] = $this->professional_facts( $queried ) + $facts['page'];
+                }
             }
+        }
+
+        // Without ACF a post still credits the Firm, so Yoast's user Person never shows.
+        if ( $singular && is_singular( 'post' ) ) {
+            $attribution   = Attribution::resolve( $queried->ID );
+            $facts['page'] = [
+                'kind'        => 'post',
+                'attribution' => [ 'state' => $attribution['state'], 'name' => $attribution['name'], 'url' => $attribution['url'] ],
+            ] + ( $facts['page'] ?? [] );
         }
 
         return self::extend( $graph, $facts );
@@ -183,6 +204,10 @@ class Schema {
             $graph = self::with_professional( $graph, $facts['page'], $graph[ $org ]['@id'] );
         }
 
+        if ( 'post' === ( $facts['page']['kind'] ?? null ) && isset( $facts['page']['attribution'] ) ) {
+            $graph = self::with_attribution( $graph, $facts['page']['attribution'], $graph[ $org ]['@id'] );
+        }
+
         if ( ! empty( $facts['page']['faqs'] ) ) {
             $graph = self::with_faqs( $graph, $facts['page']['faqs'] );
         }
@@ -224,6 +249,51 @@ class Schema {
         }
 
         $graph[] = $person;
+        return $graph;
+    }
+
+    private static function with_attribution( array $graph, array $attribution, string $org_id ): array {
+        $url   = $attribution['url'] ?? null;
+        $state = $attribution['state'] ?? 'firm';
+        if ( ! in_array( $state, [ 'written_by', 'reviewed_by' ], true ) || ! is_string( $url ) || '' === $url ) {
+            $state = 'firm';
+        }
+
+        // Yoast's Person is derived from the WordPress user, never the public credit.
+        $graph = array_values( array_filter(
+            $graph,
+            fn( $piece ) => ! ( in_array( 'Person', (array) ( $piece['@type'] ?? [] ), true )
+                && str_contains( (string) ( $piece['@id'] ?? '' ), '#/schema/person/' ) )
+        ) );
+
+        $person = 'firm' === $state ? null : [ '@id' => $url . '#person' ];
+        $author = 'written_by' === $state ? $person : [ '@id' => $org_id ];
+
+        foreach ( $graph as $i => $piece ) {
+            if ( array_intersect( [ 'Article', 'BlogPosting', 'NewsArticle' ], (array) ( $piece['@type'] ?? [] ) ) ) {
+                $graph[ $i ]['author'] = $author;
+            }
+        }
+
+        $webpage = self::webpage_index( $graph );
+        if ( null !== $webpage ) {
+            if ( array_key_exists( 'author', $graph[ $webpage ] ) ) {
+                $graph[ $webpage ]['author'] = $author;
+            }
+            if ( 'reviewed_by' === $state ) {
+                $graph[ $webpage ]['reviewedBy'] = $person;
+            }
+        }
+
+        if ( $person ) {
+            $graph[] = [
+                '@type' => 'Person',
+                '@id'   => $person['@id'],
+                'name'  => $attribution['name'] ?? '',
+                'url'   => $url,
+            ];
+        }
+
         return $graph;
     }
 

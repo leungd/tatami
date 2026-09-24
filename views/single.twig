@@ -22,6 +22,16 @@
             </time>
           {% endif %}
         </p>
+        {% if attribution %}
+          <p class="text-sm">
+            <span>{{ attribution.label }}</span>
+            {% if attribution.url %}
+              <a href="{{ attribution.url }}">{{ attribution.name }}</a>
+            {% else %}
+              {{ attribution.name }}
+            {% endif %}
+          </p>
+        {% endif %}
       {% endif %}
     {% endblock %}
   {% endembed %}
