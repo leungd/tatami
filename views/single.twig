@@ -1,5 +1,32 @@
 {% extends 'base.twig' %}
 
+{% block hero %}
+  {% embed 'partials/hero.twig'
+    with {
+      title,
+      featured_image
+    }
+  %}
+    {% block heroBody %}
+      {{ parent() }}
+      {% if post.post_type == 'post' %}
+        <p class="mt-4 text-sm">
+          <time datetime="{{ post.date('c') }}">
+            {{ __('Published %s', 'tatami')|format(post.date('F j, Y')) }}
+          </time>
+          {% if post.date('Y-m-d') != post.modified_date('Y-m-d') %}
+            <time datetime="{{ post.modified_date('c') }}">
+              {{
+                __('Updated %s', 'tatami')|format(post.modified_date('F j, Y'))
+              }}
+            </time>
+          {% endif %}
+        </p>
+      {% endif %}
+    {% endblock %}
+  {% endembed %}
+{% endblock %}
+
 {% block content %}
   <div class="fluid-grid">
     <div class="col-[content-start/content-end]">

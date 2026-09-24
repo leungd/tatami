@@ -108,11 +108,19 @@ Every page's hero renders from `partials/hero.twig`, pulled in by `{% block hero
   {% embed 'partials/hero.twig' with { title, featured_image } %}
     {% block heroBody %}
       {{ parent() }}
-      <p class="mt-4 text-sm">{{ post.date|date('F j, Y') }}</p>
+      <p class="mt-4 text-sm">
+        <time datetime="{{ post.date('c') }}">
+          {{ __('Published %s', 'tatami')|format(post.date('F j, Y')) }}
+        </time>
+      </p>
     {% endblock %}
   {% endembed %}
 {% endblock %}
 ```
+
+`views/single.twig` is the working reference: on the `post` type it adds the published date, plus an updated date when `post.modified_date` falls on a different calendar day, each as `<time datetime>` (ISO 8601) wrapping a `__()`/`|format` label.
+
+**Page structure.** `base.twig` wraps the hero and content in `<{{tag}}>`, defaulting to `<div>`. `single.php` sets `tag` to `article`, so every singular it routes — posts and every custom post type — renders inside `<article>`; `page.php` never sets it, so pages stay `<div>`. `footer.twig`, included by `{% block footer %}`, is the site's `<footer>` landmark — sites fill in its placed wrapper.
 
 **Exactly one `<h1>` per page, on the semantically-primary heading.** The hero title is a label (`<p>`) whenever the `<h1>` lives elsewhere; it is promoted to the `<h1>` only when the title is itself the whole heading (e.g. a person's name, or a utility/listing page). Each page's single `<h1>` is the derivative's responsibility. Two clarifications:
 

@@ -16,9 +16,7 @@ $context['title'] = get_the_title();
 
 $context['featured_image'] = Tatami\Queries::featured_image_with_fallback( $post );
 
-if ($post->post_type === 'post') {
-    $context['tag'] = 'article';
-}
+$context['tag'] = 'article';
 
 Timber::render(array(
     'single-' . $post->slug . '.twig',
