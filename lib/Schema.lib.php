@@ -32,6 +32,7 @@
  *       'job_title'     => 'Partner',
  *       'profile_links' => [ 'https://…', … ],
  *       'services'      => [ [ 'name', 'url' ], … ],  // url with trailing slash; Service @id is <url>#service
+ *       'faqs'          => [ [ 'question' => 'plain text', 'answer' => '<p>html</p>' ], … ],  // present on any singular
  *     ],
  *   ]
  *
@@ -75,8 +76,11 @@ class Schema {
         $facts = [ 'firm' => $this->firm_facts() ];
 
         $queried = get_queried_object();
-        if ( $queried instanceof \WP_Post && is_singular( self::post_types()['professional'] ) ) {
-            $facts['page'] = $this->professional_facts( $queried );
+        if ( $queried instanceof \WP_Post && is_singular() ) {
+            $facts['page'] = [ 'kind' => 'page', 'faqs' => $this->faq_facts( $queried ) ];
+            if ( is_singular( self::post_types()['professional'] ) ) {
+                $facts['page'] = $this->professional_facts( $queried ) + $facts['page'];
+            }
         }
 
         return self::extend( $graph, $facts );
@@ -104,6 +108,18 @@ class Schema {
             'profile_links' => $links,
             'services'      => $services,
         ];
+    }
+
+    private function faq_facts( \WP_Post $post ): array {
+        $rows = get_field( 'faqs', $post->ID );
+        if ( ! is_array( $rows ) ) {
+            return [];
+        }
+
+        return array_values( array_filter(
+            $rows,
+            fn( $row ) => '' !== trim( (string) ( $row['question'] ?? '' ) ) && ! empty( $row['answer'] )
+        ) );
     }
 
     private function firm_facts(): array {
@@ -167,6 +183,10 @@ class Schema {
             $graph = self::with_professional( $graph, $facts['page'], $graph[ $org ]['@id'] );
         }
 
+        if ( ! empty( $facts['page']['faqs'] ) ) {
+            $graph = self::with_faqs( $graph, $facts['page']['faqs'] );
+        }
+
         return $graph;
     }
 
@@ -204,6 +224,36 @@ class Schema {
         }
 
         $graph[] = $person;
+        return $graph;
+    }
+
+    private static function with_faqs( array $graph, array $faqs ): array {
+        $webpage = self::webpage_index( $graph );
+        if ( null === $webpage ) {
+            return $graph;
+        }
+
+        $piece = $graph[ $webpage ];
+        $types = (array) $piece['@type'];
+        if ( ! in_array( 'FAQPage', $types, true ) ) {
+            $types[] = 'FAQPage';
+        }
+        $piece['@type'] = $types;
+
+        $questions = [];
+        foreach ( $faqs as $faq ) {
+            $questions[] = [
+                '@type'          => 'Question',
+                'name'           => $faq['question'],
+                'acceptedAnswer' => [ '@type' => 'Answer', 'text' => $faq['answer'] ],
+            ];
+        }
+
+        // A Professional page's Person reference stays the first main entity.
+        $existing            = $piece['mainEntity'] ?? [];
+        $piece['mainEntity'] = array_merge( isset( $existing['@id'] ) ? [ $existing ] : $existing, $questions );
+
+        $graph[ $webpage ] = $piece;
         return $graph;
     }
 

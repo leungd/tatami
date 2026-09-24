@@ -321,3 +321,71 @@ $pro_no_org = array_values(
 assert_equal( $pro_no_org, Schema::extend( $pro_no_org, [ 'page' => $full_pro ] ), 'Professional without Organization -> graph unchanged' );
 
 assert_equal( $pro_graph, Schema::extend( $pro_graph, [ 'page' => [ 'kind' => 'recipe', 'name' => 'x', 'url' => $pro_url ] ] ), 'unknown page kind -> graph unchanged' );
+
+// --- FAQs --------------------------------------------------------------------
+
+$faq_rows      = [
+    [ 'question' => 'How long does a trademark application take?', 'answer' => '<p>Usually <strong>12–18 months</strong> in Canada.</p>' ],
+    [ 'question' => 'Do I need a lawyer to incorporate?', 'answer' => '<p>No, but we recommend one &amp; a shareholders\' agreement.</p>' ],
+];
+$faq_questions = [
+    [
+        '@type'          => 'Question',
+        'name'           => 'How long does a trademark application take?',
+        'acceptedAnswer' => [ '@type' => 'Answer', 'text' => '<p>Usually <strong>12–18 months</strong> in Canada.</p>' ],
+    ],
+    [
+        '@type'          => 'Question',
+        'name'           => 'Do I need a lawyer to incorporate?',
+        'acceptedAnswer' => [ '@type' => 'Answer', 'text' => '<p>No, but we recommend one &amp; a shareholders\' agreement.</p>' ],
+    ],
+];
+$faq_page      = [ 'kind' => 'page', 'faqs' => $faq_rows ];
+
+$front    = yoast_graph_fixture( 'front' );
+$extended = Schema::extend( $front, [ 'page' => $faq_page ] );
+assert_equal( [ 'WebPage', 'FAQPage' ], $extended[0]['@type'], 'FAQs on front page -> WebPage @type gains FAQPage' );
+assert_equal( $faq_questions, $extended[0]['mainEntity'] ?? null, 'FAQs on front page -> mainEntity Questions in row order' );
+assert_equal( count( $front ), count( $extended ), 'FAQs add no pieces' );
+assert_equal(
+    array_diff_key( $extended[0], [ '@type' => true, 'mainEntity' => true ] ),
+    array_diff_key( $front[0], [ '@type' => true ] ),
+    'FAQs leave the rest of the WebPage unchanged'
+);
+
+$post_graph = yoast_graph_fixture( 'post' );
+$extended   = Schema::extend( $post_graph, [ 'page' => $faq_page ] );
+assert_equal( [ 'WebPage', 'FAQPage' ], $extended[1]['@type'], 'FAQs on a post -> string WebPage @type becomes [WebPage, FAQPage]' );
+assert_equal( $faq_questions, $extended[1]['mainEntity'] ?? null, 'FAQs on a post -> mainEntity Questions' );
+assert_equal( $post_graph[0], $extended[0], 'FAQs leave the Article untouched' );
+
+assert_equal( $front, Schema::extend( $front, [ 'page' => [ 'kind' => 'page', 'faqs' => [] ] ] ), 'empty FAQs -> graph unchanged' );
+assert_equal( $front, Schema::extend( $front, [ 'page' => [ 'kind' => 'page' ] ] ), 'missing FAQs -> graph unchanged' );
+assert_equal(
+    $front,
+    Schema::extend( $front, [ 'firm' => [], 'page' => [ 'kind' => 'page', 'faqs' => [] ] ] ),
+    'empty firm and empty FAQs -> graph unchanged'
+);
+$extended = Schema::extend( $front, [ 'firm' => $full_firm, 'page' => [ 'kind' => 'page', 'faqs' => [] ] ] );
+assert_equal( $front[0], $extended[0], 'Firm facts with empty FAQs -> WebPage byte-identical' );
+
+$faq_typed             = $front;
+$faq_typed[0]['@type'] = [ 'WebPage', 'FAQPage' ];
+$extended              = Schema::extend( $faq_typed, [ 'page' => $faq_page ] );
+assert_equal( [ 'WebPage', 'FAQPage' ], $extended[0]['@type'], 'FAQPage already present is not duplicated' );
+
+$extended = Schema::extend( $pro_graph, [ 'page' => $full_pro + [ 'faqs' => $faq_rows ] ] );
+assert_equal( [ 'WebPage', 'FAQPage' ], $extended[ $webpage_index ]['@type'], 'Professional with FAQs -> WebPage gains FAQPage' );
+assert_equal(
+    array_merge( [ [ '@id' => $person_id ] ], $faq_questions ),
+    $extended[ $webpage_index ]['mainEntity'] ?? null,
+    'Professional with FAQs -> mainEntity is Person first, then Questions'
+);
+assert_equal( $person_id, end( $extended )['@id'] ?? null, 'Professional with FAQs -> Person still appended' );
+
+$extended = Schema::extend( $pro_graph, [ 'page' => $full_pro + [ 'faqs' => [] ] ] );
+assert_equal( [ '@id' => $person_id ], $extended[ $webpage_index ]['mainEntity'] ?? null, 'Professional with empty FAQs -> mainEntity stays the Person reference' );
+assert_equal( 'WebPage', $extended[ $webpage_index ]['@type'], 'Professional with empty FAQs -> no FAQPage' );
+
+$no_webpage = array_values( array_slice( $front, 1 ) );
+assert_equal( $no_webpage, Schema::extend( $no_webpage, [ 'page' => $faq_page ] ), 'FAQs without a WebPage piece -> graph unchanged' );
