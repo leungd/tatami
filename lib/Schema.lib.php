@@ -22,6 +22,8 @@
  *       'phone_number'  => '',
  *       'fax_number'    => '',
  *       'email_address' => '',
+ *       'offices'       => [ [ 'name', 'address' => [ …as above… ], 'phone_number', 'fax_number', 'email_address' ], … ],
+ *       'area_served'   => [ 'Ottawa', 'Eastern Ontario' ],
  *     ],
  *   ]
  *
@@ -60,7 +62,40 @@ class Schema {
             'phone_number'  => get_field( 'phone_number', 'option' ),
             'fax_number'    => get_field( 'fax_number', 'option' ),
             'email_address' => get_field( 'email_address', 'option' ),
+            'offices'       => $this->office_facts(),
+            'area_served'   => $this->area_served_facts(),
         ] );
+    }
+
+    private function office_facts(): array {
+        $rows = get_field( 'offices', 'option' );
+        if ( ! is_array( $rows ) ) {
+            return [];
+        }
+
+        $offices = [];
+        foreach ( $rows as $row ) {
+            $office = array_filter( [
+                'name'          => $row['name'] ?? '',
+                'address'       => array_filter( (array) ( $row['address'] ?? [] ) ),
+                'phone_number'  => $row['phone_number'] ?? '',
+                'fax_number'    => $row['fax_number'] ?? '',
+                'email_address' => $row['email_address'] ?? '',
+            ] );
+            if ( $office ) {
+                $offices[] = $office;
+            }
+        }
+        return $offices;
+    }
+
+    private function area_served_facts(): array {
+        $rows = get_field( 'area_served', 'option' );
+        if ( ! is_array( $rows ) ) {
+            return [];
+        }
+
+        return array_values( array_filter( array_map( fn( $row ) => trim( (string) ( $row['name'] ?? '' ) ), $rows ) ) );
     }
 
     public static function extend( array $graph, array $facts ): array {
@@ -71,6 +106,10 @@ class Schema {
 
         if ( ! empty( $facts['firm'] ) ) {
             $graph[ $org ] = self::with_firm( $graph[ $org ], $facts['firm'] );
+            foreach ( self::offices( $graph[ $org ], $facts['firm']['offices'] ?? [] ) as $office ) {
+                $graph[ $org ]['department'][] = [ '@id' => $office['@id'] ];
+                $graph[]                       = $office;
+            }
         }
 
         return $graph;
@@ -89,13 +128,45 @@ class Schema {
             $piece['address'] = $address;
         }
 
-        $contact = [
-            'telephone' => $firm['phone_number'] ?? '',
-            'faxNumber' => $firm['fax_number'] ?? '',
-            'email'     => $firm['email_address'] ?? '',
-        ];
+        if ( ! empty( $firm['area_served'] ) ) {
+            $piece['areaServed'] = array_values( $firm['area_served'] );
+        }
 
-        return array_merge( $piece, array_filter( $contact ) );
+        return array_merge( $piece, self::contact( $firm ) );
+    }
+
+    private static function offices( array $organization, array $offices ): array {
+        $base   = rtrim( (string) ( $organization['url'] ?? '' ), '/' ) . '/#/schema/office/';
+        $pieces = [];
+        foreach ( array_values( $offices ) as $i => $office ) {
+            $name  = $office['name'] ?? '';
+            $piece = [
+                '@type' => $organization['@type'],
+                '@id'   => $base . ( self::slug( $name ) ?: $i + 1 ),
+            ];
+            if ( $name ) {
+                $piece['name'] = $name;
+            }
+            $address = self::postal_address( (array) ( $office['address'] ?? [] ) );
+            if ( $address ) {
+                $piece['address'] = $address;
+            }
+            $piece    = array_merge( $piece, self::contact( $office ) );
+            $pieces[] = $piece + [ 'parentOrganization' => [ '@id' => $organization['@id'] ] ];
+        }
+        return $pieces;
+    }
+
+    private static function contact( array $facts ): array {
+        return array_filter( [
+            'telephone' => $facts['phone_number'] ?? '',
+            'faxNumber' => $facts['fax_number'] ?? '',
+            'email'     => $facts['email_address'] ?? '',
+        ] );
+    }
+
+    private static function slug( string $name ): string {
+        return trim( preg_replace( '/[^a-z0-9]+/', '-', strtolower( $name ) ), '-' );
     }
 
     private static function postal_address( array $address ): ?array {

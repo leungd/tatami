@@ -188,6 +188,8 @@ Yoast SEO owns SEO output (house ADR): titles, meta descriptions, canonical, Ope
 - **Facts come from house-named ACF fields.** The field names below are fixed because `Tatami\Schema` reads them; keys stay site-prefixed.
 - **No-ops cleanly.** Without Yoast the filter is never registered; without ACF the graph passes through untouched. Empty fields leave Yoast's graph unchanged, and a graph with no Organization piece is returned as-is.
 - **Firm → Organization.** With the Firm fields filled, Yoast's Organization piece gains the Firm-type subtype on its `@type` (`legal` → `LegalService`, `accounting` → `AccountingService`, `financial` → `FinancialService`, anything else → `ProfessionalService`), a structured `PostalAddress`, `telephone`, `faxNumber`, and `email`.
+- **Offices.** The Address above is the main office. Each additional Office (`offices` repeater — empty on a single-office site) becomes its own piece with the Firm's `@type`, a stable `@id` (`<home>/#/schema/office/<slug of name>`, or the 1-based row number when unnamed — renaming an Office changes its `@id`), `name`, a structured `address`, `telephone`, `faxNumber`, `email`, and `parentOrganization` → the Firm. The Organization lists them in row order as `department`. Office pieces are appended after Yoast's, leaving Yoast's order intact.
+- **Area served.** `area_served` rows become the Organization's `areaServed`, a plain list of place names in row order. One list for the whole Firm — every Service inherits it; empty adds nothing.
 - **The pure core is the test seam.** `Tatami\Schema::extend( array $graph, array $facts ): array` takes Yoast's graph plus plain facts and returns the graph, with no WordPress/ACF/Yoast calls; the adapter only gathers facts. Test it through `tests/` (see "Build & dev workflow"), asserting on the returned graph.
 
 **Firm fields (per site).** Add these to the site's Site Settings group (`acf-json/group_<site>_site_settings.json`, see "Options page"):
@@ -241,11 +243,70 @@ Yoast SEO owns SEO output (house ADR): titles, meta descriptions, canonical, Ope
     },
     { "key": "field_<site>_ss_phone_number", "label": "Phone Number", "name": "phone_number", "type": "text" },
     { "key": "field_<site>_ss_fax_number", "label": "Fax Number", "name": "fax_number", "type": "text" },
-    { "key": "field_<site>_ss_email_address", "label": "Email Address", "name": "email_address", "type": "email" }
+    { "key": "field_<site>_ss_email_address", "label": "Email Address", "name": "email_address", "type": "email" },
+    {
+      "key": "field_<site>_ss_offices",
+      "label": "Additional Offices",
+      "name": "offices",
+      "type": "repeater",
+      "instructions": "Only for firms with more than one office — leave empty on a single-office site. The main office is the Address above.",
+      "layout": "block",
+      "button_label": "Add Office",
+      "sub_fields": [
+        { "key": "field_<site>_ss_office_name", "label": "Name", "name": "name", "type": "text", "required": 1 },
+        {
+          "key": "field_<site>_ss_office_address",
+          "label": "Address",
+          "name": "address",
+          "type": "group",
+          "instructions": "Enter it exactly as the office's Google Business Profile shows it.",
+          "layout": "block",
+          "sub_fields": [
+            {
+              "key": "field_<site>_ss_office_street_address",
+              "label": "Street Address",
+              "name": "street_address",
+              "type": "text",
+              "instructions": "Include the suite or unit, as Google Business Profile writes it."
+            },
+            { "key": "field_<site>_ss_office_city", "label": "City", "name": "city", "type": "text" },
+            { "key": "field_<site>_ss_office_province", "label": "Province", "name": "province", "type": "text" },
+            { "key": "field_<site>_ss_office_postal_code", "label": "Postal Code", "name": "postal_code", "type": "text" },
+            {
+              "key": "field_<site>_ss_office_country",
+              "label": "Country",
+              "name": "country",
+              "type": "text",
+              "default_value": "Canada"
+            }
+          ]
+        },
+        { "key": "field_<site>_ss_office_phone_number", "label": "Phone Number", "name": "phone_number", "type": "text" },
+        { "key": "field_<site>_ss_office_fax_number", "label": "Fax Number", "name": "fax_number", "type": "text" },
+        { "key": "field_<site>_ss_office_email_address", "label": "Email Address", "name": "email_address", "type": "email" }
+      ]
+    },
+    {
+      "key": "field_<site>_ss_area_served",
+      "label": "Area Served",
+      "name": "area_served",
+      "type": "repeater",
+      "instructions": "Regions the firm takes work from, beyond the office cities — e.g. Eastern Ontario. One list for the whole firm; every Service inherits it.",
+      "layout": "table",
+      "button_label": "Add Region",
+      "sub_fields": [
+        { "key": "field_<site>_ss_area_name", "label": "Name", "name": "name", "type": "text", "required": 1 }
+      ]
+    }
   ],
   "location": [[{ "param": "options_page", "operator": "==", "value": "site-settings" }]]
 }
 ```
+
+**Migrating an older derivative's office fields.** Field names are never renamed on a live site (see "ACF fields"), so:
+
+- **Office repeater named `locations`:** add the `offices` field, copy each `locations` row into it with a one-off script, then drop `locations` from the group JSON and switch the templates to `offices`.
+- **Address as a single textarea:** add the `address` group and split the text into its parts — street (including the suite), city, province, postal code — exactly as the Google Business Profile shows them, then retire the textarea from the group JSON and templates.
 
 ### Address (house tool)
 
