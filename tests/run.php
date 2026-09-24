@@ -44,6 +44,8 @@ function assert_true( $actual, string $label ): void {
  * 'front'        — WebPage, BreadcrumbList, WebSite, Organization.
  * 'professional' — a profile page: WebPage (with primaryImageOfPage),
  *                  ImageObject, BreadcrumbList, WebSite, Organization.
+ * 'service'      — a Service single: WebPage, BreadcrumbList, WebSite,
+ *                  Organization.
  */
 function yoast_graph_fixture( string $kind = 'post' ): array {
     $home   = 'https://example.com/';
@@ -156,6 +158,37 @@ function yoast_graph_fixture( string $kind = 'post' ): array {
                     [ '@type' => 'ListItem', 'position' => 1, 'name' => 'Home', 'item' => $home ],
                     [ '@type' => 'ListItem', 'position' => 2, 'name' => 'Team', 'item' => $home . 'team/' ],
                     [ '@type' => 'ListItem', 'position' => 3, 'name' => 'Jane Doe' ],
+                ],
+            ],
+            $website,
+            $organization,
+        ];
+    }
+
+    if ( 'service' === $kind ) {
+        $url = $home . 'services/business-law/';
+
+        return [
+            [
+                '@type'           => 'WebPage',
+                '@id'             => $url,
+                'url'             => $url,
+                'name'            => 'Business Law | Toronto Business Lawyers',
+                'isPartOf'        => [ '@id' => $home . '#website' ],
+                'datePublished'   => '2023-06-02T17:36:21+00:00',
+                'dateModified'    => '2023-06-02T17:36:22+00:00',
+                'description'     => 'Example Law advises entrepreneurs on creating a business in Canada.',
+                'breadcrumb'      => [ '@id' => $url . '#breadcrumb' ],
+                'inLanguage'      => 'en-US',
+                'potentialAction' => [ [ '@type' => 'ReadAction', 'target' => [ $url ] ] ],
+            ],
+            [
+                '@type'           => 'BreadcrumbList',
+                '@id'             => $url . '#breadcrumb',
+                'itemListElement' => [
+                    [ '@type' => 'ListItem', 'position' => 1, 'name' => 'Home', 'item' => $home ],
+                    [ '@type' => 'ListItem', 'position' => 2, 'name' => 'Services', 'item' => $home . 'services/' ],
+                    [ '@type' => 'ListItem', 'position' => 3, 'name' => 'Business Law' ],
                 ],
             ],
             $website,

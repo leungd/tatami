@@ -454,3 +454,88 @@ $post_no_org = array_values(
     array_filter( $post_graph, fn( $piece ) => ( $piece['@id'] ?? null ) !== $org_id )
 );
 assert_equal( $post_no_org, Schema::extend( $post_no_org, attribution_facts( 'written_by', $pro_url ) ), 'Attribution without Organization -> graph unchanged' );
+
+// --- Service -----------------------------------------------------------------
+
+$service_url   = 'https://example.com/services/business-law/';
+$service_id    = $service_url . '#service';
+$service_facts = [
+    'kind'        => 'service',
+    'name'        => 'Business Law',
+    'url'         => $service_url,
+    'description' => 'Advice for entrepreneurs creating and growing a business in Canada.',
+];
+$service_graph = yoast_graph_fixture( 'service' );
+$areas         = [ 'Ottawa', 'Eastern Ontario' ];
+
+$extended = Schema::extend( $service_graph, [ 'firm' => $full_firm + [ 'area_served' => $areas ], 'page' => $service_facts ] );
+assert_equal( count( $service_graph ) + 1, count( $extended ), 'Service -> one piece added' );
+assert_equal( $service_id, end( $extended )['@id'] ?? null, 'Service appended after Yoast pieces' );
+assert_equal(
+    [
+        '@type'       => 'Service',
+        '@id'         => $service_id,
+        'name'        => 'Business Law',
+        'url'         => $service_url,
+        'provider'    => [ '@id' => $org_id ],
+        'description' => 'Advice for entrepreneurs creating and growing a business in Canada.',
+        'areaServed'  => $areas,
+    ],
+    schema_piece( $extended, $service_id ),
+    'full Service -> Service with every property'
+);
+assert_equal( schema_piece( $extended, $org_id )['areaServed'] ?? null, schema_piece( $extended, $service_id )['areaServed'] ?? null, 'Service areaServed equals the Organization areaServed' );
+assert_equal( [ '@id' => $service_id ], $extended[0]['mainEntity'] ?? null, 'WebPage mainEntity -> Service' );
+assert_equal(
+    array_diff_key( $extended[0], [ 'mainEntity' => true ] ),
+    $service_graph[0],
+    'Service leaves the rest of the WebPage unchanged'
+);
+
+$extended = Schema::extend( $service_graph, [ 'firm' => [ 'area_served' => $areas ], 'page' => [ 'description' => '' ] + $service_facts ] );
+assert_true( ! array_key_exists( 'description', schema_piece( $extended, $service_id ) ?? [] ), 'Service with empty excerpt -> no description' );
+
+$no_description = $service_facts;
+unset( $no_description['description'] );
+$extended = Schema::extend( $service_graph, [ 'page' => $no_description ] );
+assert_true( ! array_key_exists( 'description', schema_piece( $extended, $service_id ) ?? [] ), 'Service without excerpt -> no description' );
+
+$extended = Schema::extend( $service_graph, [ 'firm' => $full_firm, 'page' => $service_facts ] );
+assert_true( ! array_key_exists( 'areaServed', schema_piece( $extended, $service_id ) ?? [] ), 'Firm without area_served -> Service has no areaServed' );
+
+$extended = Schema::extend( $service_graph, [ 'page' => $service_facts ] );
+assert_equal(
+    [
+        '@type'       => 'Service',
+        '@id'         => $service_id,
+        'name'        => 'Business Law',
+        'url'         => $service_url,
+        'provider'    => [ '@id' => $org_id ],
+        'description' => 'Advice for entrepreneurs creating and growing a business in Canada.',
+    ],
+    schema_piece( $extended, $service_id ),
+    'Service without Firm facts -> provider still the Organization, no areaServed'
+);
+
+$knows_about = Schema::extend(
+    $pro_graph,
+    [ 'page' => $minimal_pro + [ 'services' => [ [ 'name' => 'Business Law', 'url' => $service_url ] ] ] ]
+);
+assert_equal(
+    schema_piece( $knows_about, $person_id )['knowsAbout'][0]['@id'] ?? null,
+    end( $extended )['@id'] ?? null,
+    'Service @id equals the Professional knowsAbout @id for the same url'
+);
+
+$extended = Schema::extend( $service_graph, [ 'page' => $service_facts + [ 'faqs' => $faq_rows ] ] );
+assert_equal(
+    array_merge( [ [ '@id' => $service_id ] ], $faq_questions ),
+    $extended[0]['mainEntity'] ?? null,
+    'Service with FAQs -> mainEntity is Service first, then Questions'
+);
+assert_equal( [ 'WebPage', 'FAQPage' ], $extended[0]['@type'], 'Service with FAQs -> WebPage gains FAQPage' );
+
+$service_no_org = array_values(
+    array_filter( $service_graph, fn( $piece ) => ( $piece['@id'] ?? null ) !== $org_id )
+);
+assert_equal( $service_no_org, Schema::extend( $service_no_org, [ 'page' => $service_facts ] ), 'Service without Organization -> graph unchanged' );

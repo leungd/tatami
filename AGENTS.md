@@ -196,7 +196,10 @@ Yoast SEO owns SEO output (house ADR): titles, meta descriptions, canonical, Ope
   ```php
   add_filter( 'tatami/schema/post_types', fn( $types ) => [ 'professional' => 'lawyer' ] + $types );
   ```
+
+  A legacy services post type (`services`, `practice-area`) is mapped the same way: `[ 'service' => 'practice-area' ]`, or both keys in one array.
 - **Professional → Person.** On a Professional single, a Person piece is appended after Yoast's (and any Office pieces) with a stable `@id` (`<profile URL>#person`), `name`, `url`, `worksFor` → the Firm, `jobTitle` (`job_title`), `sameAs` (`profile_links`), `knowsAbout` (the published `services`, each as a Service with `@id` `<service URL>#service`, `name`, `url`), and `image` → Yoast's `#primaryimage` (the featured image) when the graph has one. Empty fields omit their properties. The Person is the page's main entity: Yoast's WebPage piece gains `mainEntity` → the Person. Yoast's schema page type for Professionals is set to **Profile page** in Yoast's settings (Content types → the Professional post type → Schema) — a Launch checklist item, not code.
+- **Service → Service.** On a Service single, a Service piece is appended after Yoast's (and any Office pieces) with a stable `@id` (`<service URL>#service`), `name`, `url`, `description` from the post's manual excerpt (omitted when it has none — WordPress's auto-excerpt of the body is not used), `provider` → the Firm, and `areaServed` = the Firm's Area served list (omitted when empty). The Service is the page's main entity: Yoast's WebPage piece gains `mainEntity` → the Service. Professionals link to Services through `knowsAbout` with the same `@id`, never the reverse — no new fields.
 - **FAQs.** On any singular with `faqs` rows, Yoast's WebPage piece gains `FAQPage` and one Question per row in `mainEntity` — see "FAQs (house tool)".
 - **Attribution.** On a blog post the Article's `author` follows the post's Attribution (the Firm's Organization or the Professional's Person), `reviewedBy` marks a reviewing Professional, and Yoast's user-derived Person is removed — see "Attribution (house tool)".
 - **The pure core is the test seam.** `Tatami\Schema::extend( array $graph, array $facts ): array` takes Yoast's graph plus plain facts and returns the graph, with no WordPress/ACF/Yoast calls; the adapter only gathers facts. Test it through `tests/` (see "Build & dev workflow"), asserting on the returned graph.
@@ -434,7 +437,7 @@ One standard for FAQs on any page or post type: a `faqs` repeater, a reference m
 {% include 'modules/faqs.twig' with { faqs: post.meta('faqs') } %}
 ```
 
-**Schema.** On any singular with FAQ rows, `Tatami\Schema` adds `FAQPage` to Yoast's WebPage `@type` and sets `mainEntity` to one `Question` (`name`) with an `acceptedAnswer` `Answer` (`text`, the answer HTML) per row, in row order — built from the same rows the module renders, so the graph matches the visible text. On a Professional page the Person reference stays first in `mainEntity`, followed by the Questions. No rows adds nothing.
+**Schema.** On any singular with FAQ rows, `Tatami\Schema` adds `FAQPage` to Yoast's WebPage `@type` and sets `mainEntity` to one `Question` (`name`) with an `acceptedAnswer` `Answer` (`text`, the answer HTML) per row, in row order — built from the same rows the module renders, so the graph matches the visible text. On a Professional or Service page the Person or Service reference stays first in `mainEntity`, followed by the Questions. No rows adds nothing.
 
 FAQ rich results have been restricted to authoritative government and health sites since 2023, so law and financial firms won't get one; the value here is AI-readable Q&A, on the page and in the graph.
 
@@ -813,7 +816,7 @@ pnpm test             # Node linter tests, then PHP schema tests (php tests/run.
 pnpm format           # Prettier (JS, CSS, Twig)
 ```
 
-`tests/run.php` runs with plain `php` — no WordPress, no PHPUnit — and exits without output unless run from the CLI. It loads the pure libs under test, then every `tests/test-*.php`, and exits 1 on any failure. Shared helpers: `assert_equal()`, `assert_true()`, and `yoast_graph_fixture( 'post' | 'front' | 'professional' )`, a realistic Yoast 22+ graph.
+`tests/run.php` runs with plain `php` — no WordPress, no PHPUnit — and exits without output unless run from the CLI. It loads the pure libs under test, then every `tests/test-*.php`, and exits 1 on any failure. Shared helpers: `assert_equal()`, `assert_true()`, and `yoast_graph_fixture( 'post' | 'front' | 'professional' | 'service' )`, a realistic Yoast 22+ graph.
 
 ### How Vite integration works
 - **Dev:** Vite writes `build/hot` file → `Vite.lib.php` detects it → assets served from dev server with HMR

@@ -35,6 +35,14 @@
  *       'services'      => [ [ 'name', 'url' ], … ],  // url with trailing slash; Service @id is <url>#service
  *       'faqs'          => [ [ 'question' => 'plain text', 'answer' => '<p>html</p>' ], … ],  // present on any singular
  *     ],
+ *     // or, on a Service single:
+ *     'page' => [
+ *       'kind'        => 'service',
+ *       'name'        => 'Business Law',
+ *       'url'         => 'https://example.com/services/business-law/',  // trailing slash; Service @id is <url>#service
+ *       'description' => 'plain text',  // the manual excerpt; empty omits it
+ *       'faqs'        => [ … ],
+ *     ],
  *     // or, on a blog post:
  *     'page' => [
  *       'kind'        => 'post',
@@ -48,7 +56,7 @@
  * `tatami/schema/post_types`), so a derivative with legacy post types maps
  * them in Site.lib.php:
  *
- *   add_filter( 'tatami/schema/post_types', fn( $types ) => [ 'professional' => 'lawyer' ] + $types );
+ *   add_filter( 'tatami/schema/post_types', fn( $types ) => [ 'professional' => 'lawyer', 'service' => 'practice-area' ] + $types );
  *
  * @package  WordPress
  * @subpackage  Tatami
@@ -92,6 +100,9 @@ class Schema {
                 if ( is_singular( self::post_types()['professional'] ) ) {
                     $facts['page'] = $this->professional_facts( $queried ) + $facts['page'];
                 }
+                if ( is_singular( self::post_types()['service'] ) ) {
+                    $facts['page'] = $this->service_facts( $queried ) + $facts['page'];
+                }
             }
         }
 
@@ -128,6 +139,16 @@ class Schema {
             'job_title'     => trim( (string) get_field( 'job_title', $post->ID ) ),
             'profile_links' => $links,
             'services'      => $services,
+        ];
+    }
+
+    private function service_facts( \WP_Post $post ): array {
+        return [
+            'kind'        => 'service',
+            'name'        => html_entity_decode( get_the_title( $post ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ),
+            'url'         => trailingslashit( get_permalink( $post ) ),
+            // Only a manual excerpt; WordPress's auto-excerpt of the body is not a description.
+            'description' => has_excerpt( $post ) ? trim( wp_strip_all_tags( $post->post_excerpt ) ) : '',
         ];
     }
 
@@ -204,6 +225,10 @@ class Schema {
             $graph = self::with_professional( $graph, $facts['page'], $graph[ $org ]['@id'] );
         }
 
+        if ( 'service' === ( $facts['page']['kind'] ?? null ) ) {
+            $graph = self::with_service( $graph, $facts['page'], $graph[ $org ]['@id'], $facts['firm']['area_served'] ?? [] );
+        }
+
         if ( 'post' === ( $facts['page']['kind'] ?? null ) && isset( $facts['page']['attribution'] ) ) {
             $graph = self::with_attribution( $graph, $facts['page']['attribution'], $graph[ $org ]['@id'] );
         }
@@ -249,6 +274,32 @@ class Schema {
         }
 
         $graph[] = $person;
+        return $graph;
+    }
+
+    private static function with_service( array $graph, array $service, string $org_id, array $area_served ): array {
+        $url   = (string) $service['url'];
+        $piece = [
+            '@type'    => 'Service',
+            '@id'      => $url . '#service',
+            'name'     => $service['name'],
+            'url'      => $url,
+            'provider' => [ '@id' => $org_id ],
+        ];
+
+        if ( ! empty( $service['description'] ) ) {
+            $piece['description'] = $service['description'];
+        }
+        if ( $area_served ) {
+            $piece['areaServed'] = array_values( $area_served );
+        }
+
+        $webpage = self::webpage_index( $graph );
+        if ( null !== $webpage ) {
+            $graph[ $webpage ]['mainEntity'] = [ '@id' => $piece['@id'] ];
+        }
+
+        $graph[] = $piece;
         return $graph;
     }
 
@@ -319,7 +370,7 @@ class Schema {
             ];
         }
 
-        // A Professional page's Person reference stays the first main entity.
+        // A Professional's Person or a Service stays the first main entity.
         $existing            = $piece['mainEntity'] ?? [];
         $piece['mainEntity'] = array_merge( isset( $existing['@id'] ) ? [ $existing ] : $existing, $questions );
 
