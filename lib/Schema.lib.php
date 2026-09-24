@@ -25,7 +25,21 @@
  *       'offices'       => [ [ 'name', 'address' => [ …as above… ], 'phone_number', 'fax_number', 'email_address' ], … ],
  *       'area_served'   => [ 'Ottawa', 'Eastern Ontario' ],
  *     ],
+ *     'page' => [  // the queried page; unknown kinds are ignored
+ *       'kind'          => 'professional',
+ *       'name'          => 'Jane Doe',
+ *       'url'           => 'https://example.com/team/jane-doe/',  // trailing slash; Person @id is <url>#person
+ *       'job_title'     => 'Partner',
+ *       'profile_links' => [ 'https://…', … ],
+ *       'services'      => [ [ 'name', 'url' ], … ],  // url with trailing slash; Service @id is <url>#service
+ *     ],
  *   ]
+ *
+ * Post type names come from Schema::post_types() (filter
+ * `tatami/schema/post_types`), so a derivative with legacy post types maps
+ * them in Site.lib.php:
+ *
+ *   add_filter( 'tatami/schema/post_types', fn( $types ) => [ 'professional' => 'lawyer' ] + $types );
  *
  * @package  WordPress
  * @subpackage  Tatami
@@ -47,12 +61,49 @@ class Schema {
         }
     }
 
+    public static function post_types(): array {
+        $defaults = [ 'professional' => 'professional', 'service' => 'service' ];
+
+        return function_exists( 'apply_filters' ) ? apply_filters( 'tatami/schema/post_types', $defaults ) : $defaults;
+    }
+
     public function filter_graph( $graph, $context ) {
         if ( ! is_array( $graph ) || ! function_exists( 'get_field' ) ) {
             return $graph;
         }
 
-        return self::extend( $graph, [ 'firm' => $this->firm_facts() ] );
+        $facts = [ 'firm' => $this->firm_facts() ];
+
+        $queried = get_queried_object();
+        if ( $queried instanceof \WP_Post && is_singular( self::post_types()['professional'] ) ) {
+            $facts['page'] = $this->professional_facts( $queried );
+        }
+
+        return self::extend( $graph, $facts );
+    }
+
+    private function professional_facts( \WP_Post $post ): array {
+        $links = get_field( 'profile_links', $post->ID );
+        $links = is_array( $links ) ? array_values( array_filter( array_map( fn( $row ) => trim( (string) ( $row['url'] ?? '' ) ), $links ) ) ) : [];
+
+        $services = [];
+        foreach ( (array) get_field( 'services', $post->ID ) as $service_id ) {
+            if ( $service_id && 'publish' === get_post_status( $service_id ) ) {
+                $services[] = [
+                    'name' => html_entity_decode( get_the_title( $service_id ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ),
+                    'url'  => trailingslashit( get_permalink( $service_id ) ),
+                ];
+            }
+        }
+
+        return [
+            'kind'          => 'professional',
+            'name'          => html_entity_decode( get_the_title( $post ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ),
+            'url'           => trailingslashit( get_permalink( $post ) ),
+            'job_title'     => trim( (string) get_field( 'job_title', $post->ID ) ),
+            'profile_links' => $links,
+            'services'      => $services,
+        ];
     }
 
     private function firm_facts(): array {
@@ -112,6 +163,47 @@ class Schema {
             }
         }
 
+        if ( 'professional' === ( $facts['page']['kind'] ?? null ) ) {
+            $graph = self::with_professional( $graph, $facts['page'], $graph[ $org ]['@id'] );
+        }
+
+        return $graph;
+    }
+
+    private static function with_professional( array $graph, array $professional, string $org_id ): array {
+        $url    = (string) $professional['url'];
+        $person = [
+            '@type'    => 'Person',
+            '@id'      => $url . '#person',
+            'name'     => $professional['name'],
+            'url'      => $url,
+            'worksFor' => [ '@id' => $org_id ],
+        ];
+
+        if ( ! empty( $professional['job_title'] ) ) {
+            $person['jobTitle'] = $professional['job_title'];
+        }
+        if ( ! empty( $professional['profile_links'] ) ) {
+            $person['sameAs'] = array_values( $professional['profile_links'] );
+        }
+        foreach ( $professional['services'] ?? [] as $service ) {
+            $person['knowsAbout'][] = [
+                '@type' => 'Service',
+                '@id'   => $service['url'] . '#service',
+                'name'  => $service['name'],
+                'url'   => $service['url'],
+            ];
+        }
+        if ( in_array( $url . '#primaryimage', array_column( $graph, '@id' ), true ) ) {
+            $person['image'] = [ '@id' => $url . '#primaryimage' ];
+        }
+
+        $webpage = self::webpage_index( $graph );
+        if ( null !== $webpage ) {
+            $graph[ $webpage ]['mainEntity'] = [ '@id' => $person['@id'] ];
+        }
+
+        $graph[] = $person;
         return $graph;
     }
 
@@ -179,6 +271,17 @@ class Schema {
         ] );
 
         return $parts ? [ '@type' => 'PostalAddress' ] + $parts : null;
+    }
+
+    private static function webpage_index( array $graph ): ?int {
+        foreach ( $graph as $index => $piece ) {
+            foreach ( (array) ( $piece['@type'] ?? [] ) as $type ) {
+                if ( str_ends_with( $type, 'Page' ) ) {
+                    return $index;
+                }
+            }
+        }
+        return null;
     }
 
     private static function organization_index( array $graph ): ?int {

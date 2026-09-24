@@ -214,3 +214,110 @@ assert_true( ! array_key_exists( 'areaServed', $org ), 'empty area_served adds n
 
 $org = schema_piece( Schema::extend( yoast_graph_fixture(), [ 'firm' => $full_firm ] ), $org_id );
 assert_true( ! array_key_exists( 'areaServed', $org ), 'missing area_served adds no areaServed' );
+
+// --- Professional ------------------------------------------------------------
+
+assert_equal( [ 'professional' => 'professional', 'service' => 'service' ], Schema::post_types(), 'post_types() defaults' );
+
+$pro_url       = 'https://example.com/team/jane-doe/';
+$person_id     = $pro_url . '#person';
+$full_pro      = [
+    'kind'          => 'professional',
+    'name'          => 'Jane Doe',
+    'url'           => $pro_url,
+    'job_title'     => 'Partner',
+    'profile_links' => [ 'https://lso.ca/lawyer/jane-doe', 'https://www.linkedin.com/in/jane-doe' ],
+    'services'      => [
+        [ 'name' => 'Corporate Law', 'url' => 'https://example.com/services/corporate-law/' ],
+        [ 'name' => 'Commercial Real Estate', 'url' => 'https://example.com/services/commercial-real-estate/' ],
+    ],
+];
+$minimal_pro   = [ 'kind' => 'professional', 'name' => 'Jane Doe', 'url' => $pro_url ];
+$pro_graph     = yoast_graph_fixture( 'professional' );
+$webpage_index = 0;
+
+$extended = Schema::extend( $pro_graph, [ 'page' => $full_pro ] );
+assert_equal( count( $pro_graph ) + 1, count( $extended ), 'full Professional -> one piece added' );
+assert_equal( $person_id, $extended[ count( $pro_graph ) ]['@id'] ?? null, 'Person appended after Yoast pieces' );
+assert_equal(
+    [
+        '@type'      => 'Person',
+        '@id'        => $person_id,
+        'name'       => 'Jane Doe',
+        'url'        => $pro_url,
+        'worksFor'   => [ '@id' => $org_id ],
+        'jobTitle'   => 'Partner',
+        'sameAs'     => [ 'https://lso.ca/lawyer/jane-doe', 'https://www.linkedin.com/in/jane-doe' ],
+        'knowsAbout' => [
+            [
+                '@type' => 'Service',
+                '@id'   => 'https://example.com/services/corporate-law/#service',
+                'name'  => 'Corporate Law',
+                'url'   => 'https://example.com/services/corporate-law/',
+            ],
+            [
+                '@type' => 'Service',
+                '@id'   => 'https://example.com/services/commercial-real-estate/#service',
+                'name'  => 'Commercial Real Estate',
+                'url'   => 'https://example.com/services/commercial-real-estate/',
+            ],
+        ],
+        'image'      => [ '@id' => $pro_url . '#primaryimage' ],
+    ],
+    schema_piece( $extended, $person_id ),
+    'full Professional -> Person with every property'
+);
+assert_equal( [ '@id' => $person_id ], $extended[ $webpage_index ]['mainEntity'] ?? null, 'WebPage mainEntity -> Person' );
+assert_equal(
+    array_diff_key( $extended[ $webpage_index ], [ 'mainEntity' => true ] ),
+    $pro_graph[ $webpage_index ],
+    'WebPage otherwise unchanged'
+);
+foreach ( $pro_graph as $i => $piece ) {
+    if ( $i !== $webpage_index ) {
+        assert_equal( $piece, $extended[ $i ], 'Professional leaves untouched: ' . $piece['@id'] );
+    }
+}
+
+$profile_graph = $pro_graph;
+
+$profile_graph[ $webpage_index ]['@type'] = [ 'WebPage', 'ProfilePage' ];
+
+$extended = Schema::extend( $profile_graph, [ 'page' => $full_pro ] );
+assert_equal( [ '@id' => $person_id ], $extended[ $webpage_index ]['mainEntity'] ?? null, 'ProfilePage @type array -> mainEntity set' );
+
+$no_image = array_values(
+    array_filter( $pro_graph, fn( $piece ) => ( $piece['@id'] ?? null ) !== $pro_url . '#primaryimage' )
+);
+$extended = Schema::extend( $no_image, [ 'page' => $minimal_pro ] );
+assert_equal(
+    [
+        '@type'    => 'Person',
+        '@id'      => $person_id,
+        'name'     => 'Jane Doe',
+        'url'      => $pro_url,
+        'worksFor' => [ '@id' => $org_id ],
+    ],
+    schema_piece( $extended, $person_id ),
+    'minimal Professional -> Person without jobTitle, sameAs, knowsAbout, image'
+);
+
+$extended = Schema::extend(
+    $no_image,
+    [ 'page' => $minimal_pro + [ 'job_title' => '', 'profile_links' => [], 'services' => [] ] ]
+);
+assert_equal( 5, count( schema_piece( $extended, $person_id ) ?? [] ), 'empty optional Professional facts add no properties' );
+
+$extended = Schema::extend( $pro_graph, [ 'firm' => $full_firm + [ 'offices' => $offices ], 'page' => $full_pro ] );
+$org      = schema_piece( $extended, $org_id );
+assert_equal( [ 'Organization', 'LegalService' ], $org['@type'], 'Firm facts still apply on a Professional page' );
+assert_equal( '416-555-0100', $org['telephone'] ?? null, 'Firm contact still applies on a Professional page' );
+assert_equal( $person_id, end( $extended )['@id'] ?? null, 'Person appended after Office pieces' );
+assert_equal( [ '@id' => $org_id ], schema_piece( $extended, $person_id )['worksFor'] ?? null, 'Person worksFor the Organization alongside Firm facts' );
+
+$pro_no_org = array_values(
+    array_filter( $pro_graph, fn( $piece ) => ( $piece['@id'] ?? null ) !== $org_id )
+);
+assert_equal( $pro_no_org, Schema::extend( $pro_no_org, [ 'page' => $full_pro ] ), 'Professional without Organization -> graph unchanged' );
+
+assert_equal( $pro_graph, Schema::extend( $pro_graph, [ 'page' => [ 'kind' => 'recipe', 'name' => 'x', 'url' => $pro_url ] ] ), 'unknown page kind -> graph unchanged' );

@@ -190,6 +190,12 @@ Yoast SEO owns SEO output (house ADR): titles, meta descriptions, canonical, Ope
 - **Firm → Organization.** With the Firm fields filled, Yoast's Organization piece gains the Firm-type subtype on its `@type` (`legal` → `LegalService`, `accounting` → `AccountingService`, `financial` → `FinancialService`, anything else → `ProfessionalService`), a structured `PostalAddress`, `telephone`, `faxNumber`, and `email`.
 - **Offices.** The Address above is the main office. Each additional Office (`offices` repeater — empty on a single-office site) becomes its own piece with the Firm's `@type`, a stable `@id` (`<home>/#/schema/office/<slug of name>`, or the 1-based row number when unnamed — renaming an Office changes its `@id`), `name`, a structured `address`, `telephone`, `faxNumber`, `email`, and `parentOrganization` → the Firm. The Organization lists them in row order as `department`. Office pieces are appended after Yoast's, leaving Yoast's order intact.
 - **Area served.** `area_served` rows become the Organization's `areaServed`, a plain list of place names in row order. One list for the whole Firm — every Service inherits it; empty adds nothing.
+- **Post types.** The base assumes the post type names `professional` and `service` (the URL rewrite slug is independent — e.g. `'rewrite' => [ 'slug' => 'lawyers' ]`). New sites register the CPTs under these house names. An older derivative with legacy names maps them with one line in `Site.lib.php`, and everything in the base that needs either name reads it from `Tatami\Schema::post_types()`:
+
+  ```php
+  add_filter( 'tatami/schema/post_types', fn( $types ) => [ 'professional' => 'lawyer' ] + $types );
+  ```
+- **Professional → Person.** On a Professional single, a Person piece is appended after Yoast's (and any Office pieces) with a stable `@id` (`<profile URL>#person`), `name`, `url`, `worksFor` → the Firm, `jobTitle` (`job_title`), `sameAs` (`profile_links`), `knowsAbout` (the published `services`, each as a Service with `@id` `<service URL>#service`, `name`, `url`), and `image` → Yoast's `#primaryimage` (the featured image) when the graph has one. Empty fields omit their properties. The Person is the page's main entity: Yoast's WebPage piece gains `mainEntity` → the Person. Yoast's schema page type for Professionals is set to **Profile page** in Yoast's settings (Content types → the Professional post type → Schema) — a Launch checklist item, not code.
 - **The pure core is the test seam.** `Tatami\Schema::extend( array $graph, array $facts ): array` takes Yoast's graph plus plain facts and returns the graph, with no WordPress/ACF/Yoast calls; the adapter only gathers facts. Test it through `tests/` (see "Build & dev workflow"), asserting on the returned graph.
 
 **Firm fields (per site).** Add these to the site's Site Settings group (`acf-json/group_<site>_site_settings.json`, see "Options page"):
@@ -307,6 +313,47 @@ Yoast SEO owns SEO output (house ADR): titles, meta descriptions, canonical, Ope
 
 - **Office repeater named `locations`:** add the `offices` field, copy each `locations` row into it with a one-off script, then drop `locations` from the group JSON and switch the templates to `offices`.
 - **Address as a single textarea:** add the `address` group and split the text into its parts — street (including the suite), city, province, postal code — exactly as the Google Business Profile shows them, then retire the textarea from the group JSON and templates.
+
+**Professional fields (per site).** `acf-json/group_<site>_professional.json`. A legacy site changes the location value and the relationship's `post_type` to its own post type names.
+
+```json
+{
+  "key": "group_<site>_professional",
+  "title": "Professional",
+  "fields": [
+    {
+      "key": "field_<site>_pro_job_title",
+      "label": "Job Title",
+      "name": "job_title",
+      "type": "text",
+      "instructions": "Shown in schema as the Person's job title, e.g. Partner, Associate."
+    },
+    {
+      "key": "field_<site>_pro_profile_links",
+      "label": "Profile Links",
+      "name": "profile_links",
+      "type": "repeater",
+      "instructions": "This person's listings elsewhere, which confirm who they are to search engines. Priorities: the regulator's directory listing (e.g. the Law Society directory), then LinkedIn.",
+      "layout": "table",
+      "button_label": "Add Link",
+      "sub_fields": [
+        { "key": "field_<site>_pro_profile_link_url", "label": "URL", "name": "url", "type": "url", "required": 1 }
+      ]
+    },
+    {
+      "key": "field_<site>_pro_services",
+      "label": "Services",
+      "name": "services",
+      "type": "relationship",
+      "instructions": "Services this Professional practises — listed on their Person as knowsAbout.",
+      "post_type": ["service"],
+      "filters": ["search"],
+      "return_format": "id"
+    }
+  ],
+  "location": [[{ "param": "post_type", "operator": "==", "value": "professional" }]]
+}
+```
 
 ### Address (house tool)
 

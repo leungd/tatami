@@ -39,9 +39,11 @@ function assert_true( $actual, string $label ): void {
 /**
  * A Yoast 22+ graph as emitted on a real site, host renamed.
  *
- * 'post'  — Article, WebPage, ImageObject, BreadcrumbList, WebSite,
- *           Organization, and the raw user-derived author Person.
- * 'front' — WebPage, BreadcrumbList, WebSite, Organization.
+ * 'post'         — Article, WebPage, ImageObject, BreadcrumbList, WebSite,
+ *                  Organization, and the raw user-derived author Person.
+ * 'front'        — WebPage, BreadcrumbList, WebSite, Organization.
+ * 'professional' — a profile page: WebPage (with primaryImageOfPage),
+ *                  ImageObject, BreadcrumbList, WebSite, Organization.
  */
 function yoast_graph_fixture( string $kind = 'post' ): array {
     $home   = 'https://example.com/';
@@ -110,6 +112,51 @@ function yoast_graph_fixture( string $kind = 'post' ): array {
                 '@type'           => 'BreadcrumbList',
                 '@id'             => $home . '#breadcrumb',
                 'itemListElement' => [ [ '@type' => 'ListItem', 'position' => 1, 'name' => 'Home' ] ],
+            ],
+            $website,
+            $organization,
+        ];
+    }
+
+    if ( 'professional' === $kind ) {
+        $url   = $home . 'team/jane-doe/';
+        $image = $home . 'wp-content/uploads/2022/07/jane-doe.jpg';
+
+        return [
+            [
+                '@type'              => 'WebPage',
+                '@id'                => $url,
+                'url'                => $url,
+                'name'               => 'Jane Doe | Toronto Corporate & Commercial Lawyer',
+                'isPartOf'           => [ '@id' => $home . '#website' ],
+                'primaryImageOfPage' => [ '@id' => $url . '#primaryimage' ],
+                'image'              => [ '@id' => $url . '#primaryimage' ],
+                'thumbnailUrl'       => $image,
+                'datePublished'      => '2022-07-23T18:05:06+00:00',
+                'dateModified'       => '2025-09-02T20:46:21+00:00',
+                'description'        => 'Jane is a corporate and commercial lawyer.',
+                'breadcrumb'         => [ '@id' => $url . '#breadcrumb' ],
+                'inLanguage'         => 'en-US',
+                'potentialAction'    => [ [ '@type' => 'ReadAction', 'target' => [ $url ] ] ],
+            ],
+            [
+                '@type'      => 'ImageObject',
+                'inLanguage' => 'en-US',
+                '@id'        => $url . '#primaryimage',
+                'url'        => $image,
+                'contentUrl' => $image,
+                'width'      => 2048,
+                'height'     => 1365,
+                'caption'    => 'Photo of business lawyer, Jane Doe',
+            ],
+            [
+                '@type'           => 'BreadcrumbList',
+                '@id'             => $url . '#breadcrumb',
+                'itemListElement' => [
+                    [ '@type' => 'ListItem', 'position' => 1, 'name' => 'Home', 'item' => $home ],
+                    [ '@type' => 'ListItem', 'position' => 2, 'name' => 'Team', 'item' => $home . 'team/' ],
+                    [ '@type' => 'ListItem', 'position' => 3, 'name' => 'Jane Doe' ],
+                ],
             ],
             $website,
             $organization,
