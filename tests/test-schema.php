@@ -539,3 +539,33 @@ $service_no_org = array_values(
     array_filter( $service_graph, fn( $piece ) => ( $piece['@id'] ?? null ) !== $org_id )
 );
 assert_equal( $service_no_org, Schema::extend( $service_no_org, [ 'page' => $service_facts ] ), 'Service without Organization -> graph unchanged' );
+
+// --- Organization found by @id, not @type -------------------------------------
+
+// Site representation = Person: Yoast types the site piece Person + Organization
+// under a #/schema/person/ @id. There is no #organization piece, so nothing applies.
+$as_person = yoast_graph_fixture( 'post' );
+foreach ( $as_person as $i => $piece ) {
+    if ( ( $piece['@id'] ?? null ) === $org_id ) {
+        $as_person[ $i ]['@type'] = [ 'Person', 'Organization' ];
+        $as_person[ $i ]['@id']   = 'https://example.com/#/schema/person/site';
+    }
+}
+assert_equal( $as_person, Schema::extend( $as_person, [ 'firm' => $full_firm ] ), 'Person-represented site: Firm facts leave graph unchanged' );
+assert_equal(
+    $as_person,
+    Schema::extend( $as_person, [ 'page' => [ 'kind' => 'post', 'attribution' => [ 'state' => 'firm', 'name' => 'Example Law', 'url' => null ] ] ] ),
+    'Person-represented site: Attribution leaves graph unchanged'
+);
+
+// --- Same-named Offices keep distinct @ids ------------------------------------
+
+$twins = Schema::extend( yoast_graph_fixture( 'front' ), [ 'firm' => [ 'offices' => [
+    [ 'name' => 'Ottawa', 'phone_number' => '613-555-0100' ],
+    [ 'name' => 'Ottawa', 'phone_number' => '613-555-0200' ],
+] ] ] );
+assert_equal(
+    [ 'https://example.com/#/schema/office/ottawa', 'https://example.com/#/schema/office/ottawa-2' ],
+    array_column( schema_piece( $twins, $org_id )['department'], '@id' ),
+    'same-named Offices get distinct @ids'
+);

@@ -21,7 +21,7 @@ namespace Tatami;
 class Attribution {
 
     public function __construct() {
-        add_action( 'acf/save_post', [ $this, 'fill_name_from_person' ], 20 );
+        add_action( 'acf/save_post', [ $this, 'fill_name_from_professional' ], 20 );
         add_action( 'init', [ $this, 'hide_author_box' ], 20 );
         add_action( 'rest_api_init', [ $this, 'remove_author_support' ] );
 
@@ -53,31 +53,28 @@ class Attribution {
             return $firm;
         }
 
-        $person_id = (int) get_field( 'attribution_person', $post_id );
-        if ( ! self::is_published_professional( $person_id ) ) {
+        $professional_id = (int) get_field( 'attribution_person', $post_id );
+        if ( ! self::is_published_professional( $professional_id ) ) {
             return $firm;
         }
 
-        $name = trim( (string) get_field( 'attribution_name', $post_id ) );
-        if ( '' === $name ) {
-            $name = html_entity_decode( get_the_title( $person_id ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
-        }
-
+        // The live title, not attribution_name: the stored copy is refreshed
+        // only when the post is saved, so it goes stale when a Professional is renamed.
         return [
             'state' => $state,
             'label' => 'reviewed_by' === $state ? __( 'Reviewed by', 'tatami' ) : __( 'Written by', 'tatami' ),
-            'name'  => $name,
-            'url'   => trailingslashit( get_permalink( $person_id ) ),
+            'name'  => html_entity_decode( get_the_title( $professional_id ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ),
+            'url'   => trailingslashit( get_permalink( $professional_id ) ),
         ];
     }
 
-    private static function is_published_professional( int $person_id ): bool {
-        return $person_id
-            && Schema::post_types()['professional'] === get_post_type( $person_id )
-            && 'publish' === get_post_status( $person_id );
+    private static function is_published_professional( int $professional_id ): bool {
+        return $professional_id
+            && Schema::post_types()['professional'] === get_post_type( $professional_id )
+            && 'publish' === get_post_status( $professional_id );
     }
 
-    public function fill_name_from_person( $post_id ): void {
+    public function fill_name_from_professional( $post_id ): void {
         if ( 'post' !== get_post_type( $post_id ) ) {
             return;
         }
@@ -85,9 +82,9 @@ class Attribution {
         if ( 'written_by' !== $state && 'reviewed_by' !== $state ) {
             return;
         }
-        $person_id = (int) get_field( 'attribution_person', $post_id );
-        if ( self::is_published_professional( $person_id ) ) {
-            update_field( 'attribution_name', html_entity_decode( get_the_title( $person_id ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ), $post_id );
+        $professional_id = (int) get_field( 'attribution_person', $post_id );
+        if ( self::is_published_professional( $professional_id ) ) {
+            update_field( 'attribution_name', html_entity_decode( get_the_title( $professional_id ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ), $post_id );
         }
     }
 

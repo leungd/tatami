@@ -14,7 +14,7 @@
           <time datetime="{{ post.date('c') }}">
             {{ __('Published %s', 'tatami')|format(post.date('F j, Y')) }}
           </time>
-          {% if post.date('Y-m-d') != post.modified_date('Y-m-d') %}
+          {% if post.modified_date('Y-m-d') > post.date('Y-m-d') %}
             <time datetime="{{ post.modified_date('c') }}">
               {{
                 __('Updated %s', 'tatami')|format(post.modified_date('F j, Y'))

@@ -10,15 +10,13 @@
     Single line — "100 King St W Suite 5600, Toronto, ON M5X 1C9":
     <p>{{ address(options.address) }}</p>
 
-    Two lines — street, then "Toronto, ON  M5X 1C9", joined by <br>:
+    Two lines — street, then "Toronto, ON M5X 1C9", joined by <br>:
     <address class="not-italic">{{ address(options.address, true) }}</address>
 #}
 {% macro address(address, multiline = false) %}
   {%- if address -%}
     {%- set region =
-      [address.province, address.postal_code]
-        |filter(part => part)
-        |join(multiline ? '  ' : ' ')
+      [address.province, address.postal_code]|filter(part => part)|join(' ')
     -%}
     {%- set locality =
       [address.city, region]|filter(part => part)|join(', ')

@@ -401,11 +401,18 @@ class Schema {
     private static function offices( array $organization, array $offices ): array {
         $base   = rtrim( (string) ( $organization['url'] ?? '' ), '/' ) . '/#/schema/office/';
         $pieces = [];
+        $used   = [];
         foreach ( array_values( $offices ) as $i => $office ) {
-            $name  = $office['name'] ?? '';
+            $name = $office['name'] ?? '';
+            $id   = $base . ( self::slug( $name ) ?: $i + 1 );
+            if ( isset( $used[ $id ] ) ) {
+                $id .= '-' . ++$used[ $id ];
+            } else {
+                $used[ $id ] = 1;
+            }
             $piece = [
                 '@type' => $organization['@type'],
-                '@id'   => $base . ( self::slug( $name ) ?: $i + 1 ),
+                '@id'   => $id,
             ];
             if ( $name ) {
                 $piece['name'] = $name;
@@ -455,9 +462,12 @@ class Schema {
         return null;
     }
 
+    // Yoast's Organization piece is <home>/#organization. A site represented as
+    // a Person has no such piece (its Person+Organization sits under
+    // #/schema/person/), so nothing is added.
     private static function organization_index( array $graph ): ?int {
         foreach ( $graph as $index => $piece ) {
-            if ( in_array( 'Organization', (array) ( $piece['@type'] ?? [] ), true ) ) {
+            if ( str_ends_with( (string) ( $piece['@id'] ?? '' ), '#organization' ) ) {
                 return $index;
             }
         }

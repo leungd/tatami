@@ -187,7 +187,7 @@ $context['related_posts'] = Tatami\Queries::related_posts( $post, 5 );     // or
 Yoast SEO owns SEO output (house ADR): titles, meta descriptions, canonical, Open Graph, and the single JSON-LD graph. **The theme never prints JSON-LD, microdata, or head meta.** `Tatami\Schema` (`lib/Schema.lib.php`) adds the site's facts to Yoast's graph through the `wpseo_schema_graph` filter — never a second graph.
 
 - **Facts come from house-named ACF fields.** The field names below are fixed because `Tatami\Schema` reads them; keys stay site-prefixed.
-- **No-ops cleanly.** Without Yoast the filter is never registered; without ACF the only change is a post's Attribution, which falls back to the Firm. Empty fields leave Yoast's graph unchanged, and a graph with no Organization piece is returned as-is.
+- **No-ops cleanly.** Without Yoast the filter is never registered; without ACF the only change is a post's Attribution, which falls back to the Firm. Empty fields leave Yoast's graph unchanged, and a graph with no `#organization` piece (a site represented as a Person in Yoast) is returned as-is.
 - **Firm → Organization.** With the Firm fields filled, Yoast's Organization piece gains the Firm-type subtype on its `@type` (`legal` → `LegalService`, `accounting` → `AccountingService`, `financial` → `FinancialService`, anything else → `ProfessionalService`), a structured `PostalAddress`, `telephone`, `faxNumber`, and `email`.
 - **Offices.** The Address above is the main office. Each additional Office (`offices` repeater — empty on a single-office site) becomes its own piece with the Firm's `@type`, a stable `@id` (`<home>/#/schema/office/<slug of name>`, or the 1-based row number when unnamed — renaming an Office changes its `@id`), `name`, a structured `address`, `telephone`, `faxNumber`, `email`, and `parentOrganization` → the Firm. The Organization lists them in row order as `department`. Office pieces are appended after Yoast's, leaving Yoast's order intact.
 - **Area served.** `area_served` rows become the Organization's `areaServed`, a plain list of place names in row order. One list for the whole Firm — every Service inherits it; empty adds nothing.
@@ -363,7 +363,7 @@ Yoast SEO owns SEO output (house ADR): titles, meta descriptions, canonical, Ope
 
 ### Address (house tool)
 
-`macros/address.twig` renders an `address` group in the Canadian format Google Business Profile uses, so the visible address matches the listing and the schema: single-line `100 King St W Suite 5600, Toronto, ON M5X 1C9`, or with `multiline` the street, `<br>`, then `Toronto, ON  M5X 1C9`. Empty parts are skipped, country is not displayed (it exists for schema), and it emits no wrapper element — the caller places it.
+`macros/address.twig` renders an `address` group in the Canadian format Google Business Profile uses, so the visible address matches the listing and the schema: single-line `100 King St W Suite 5600, Toronto, ON M5X 1C9`, or with `multiline` the street, `<br>`, then `Toronto, ON M5X 1C9`. Empty parts are skipped, country is not displayed (it exists for schema), and it emits no wrapper element — the caller places it.
 
 ```twig
 {% from 'macros/address.twig' import address %}
@@ -452,7 +452,7 @@ A blog post's **Attribution** is the credit it publicly carries: the Firm itself
 **Resolver.** `Tatami\Attribution::resolve( $post_id )` returns `{ state, label, name, url }`:
 
 - `firm` → label "Written on behalf of", name the site title (Settings → General), url `null`.
-- `written_by` / `reviewed_by` → label "Written by" / "Reviewed by", name the `attribution_name` field (else the Professional's title), url the Professional's profile permalink.
+- `written_by` / `reviewed_by` → label "Written by" / "Reviewed by", name the Professional's current title, url the Professional's profile permalink.
 - A personal credit needs a **published Professional** (`attribution_person`, of the Professional post type from `Tatami\Schema::post_types()`). No Professional, a draft/trashed one, or an unknown state → the Firm. Without ACF every post credits the Firm.
 
 `single.php` puts the result in the `attribution` context key on posts, labels already translated. The base's `single.twig` renders a minimal credit in `heroBody` after the dates; the markup is per site:
@@ -480,7 +480,7 @@ A blog post's **Attribution** is the credit it publicly carries: the Firm itself
 - A credited Professional is appended as a minimal Person (`name`, `url`) whose `@id` is `<profile URL>#person` — the same `@id` as the Person on that Professional's profile page, so author and profile are one Entity (the full description lives on the profile page).
 - In every state Yoast's user-derived Person (`…/#/schema/person/<hash>`) is removed, so no WordPress user or author-archive URL appears in a post's graph.
 
-**Field (per site).** `acf-json/group_<site>_attribution.json`. The field *names* are fixed — `Tatami\Attribution` reads them. `attribution_name` is written from the Professional's title on save. A legacy site changes the person field's `post_type` to its own Professional post type.
+**Field (per site).** `acf-json/group_<site>_attribution.json`. The field *names* are fixed — `Tatami\Attribution` reads them. `attribution_name` is written from the Professional's title on save so editors see the credit in the list and edit screens; output always uses the Professional's current title. A legacy site changes the person field's `post_type` to its own Professional post type.
 
 ```json
 {
@@ -497,8 +497,8 @@ A blog post's **Attribution** is the credit it publicly carries: the Firm itself
       "default_value": "firm",
       "choices": {
         "firm": "Written on behalf of the firm",
-        "written_by": "Written by a specific person",
-        "reviewed_by": "Reviewed by a specific person"
+        "written_by": "Written by a Professional",
+        "reviewed_by": "Reviewed by a Professional"
       }
     },
     {
