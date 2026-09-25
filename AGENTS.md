@@ -51,7 +51,7 @@ views/                 → All Twig templates
   base.twig            → Root HTML shell — all page templates extend this
   partials/            → Reusable fragments (head, hero, pagination, post-list)
   macros/              → Twig macros for repeated patterns (images, addresses)
-  modules/             → Self-contained content sections (FAQs, services grid, map, etc.)
+  modules/             → Sections rendered by more than one template (FAQs, related posts, services grid)
 src/css/tailwind.css   → Tailwind config + custom utilities + component styles
 src/js/main.js         → JS entry point — imports CSS, initializes modules
 docs/                  → One reference doc per house tool and convention (see "Where the details live")
@@ -136,10 +136,14 @@ A `faqs` repeater (fixed name; `question` + WYSIWYG `answer`, both required) ren
 A post's public credit is the Firm, "Written by" a Professional, or "Reviewed by" a Professional — never the WordPress user. `Tatami\Attribution::resolve()` is the one resolver behind the byline, Yoast's author meta, the share card and the graph; `single.php` exposes it as `attribution`. Field names `attribution_state`, `attribution_person`, `attribution_name` are fixed. Details: `docs/attribution.md`.
 
 ### Add a reusable module
+A module is a section that **more than one template renders**, or one driven by data any router could supply (a services grid, testimonials, Related Posts, FAQs). A section that exists on one page is not a module: it lives inline in that page template, however long the template gets. A module carries a contract (data in via context, no-op when absent) and a name in a shared namespace — giving that to single-use markup is an abstraction with one caller. Extract when the second consumer appears, not before. The tell: a module included by one template and fed only by that template's router is page markup in a costume; inline it. The house-tool modules (`faqs`, `related-posts`) are reusable by design.
+
 1. Create `views/modules/{name}.twig`
 2. Include it from page templates: `{% include 'modules/{name}.twig' with { data: someData } %}`
 3. Keep modules self-contained — they receive data via context, never query directly
 4. Guard on the data so the module no-ops when it's absent (`{% if services %}…{% endif %}`). This lets the same module be dropped into any template; it only renders where the router supplied data.
+
+A section's heading group inside a page template is a `<div>`, never a `<header>` — `<header>` is reserved for the hero, and `pnpm lint` fails a page template that contains one. Do not extract a section into a module just to get a `<header>` past lint.
 
 ### Add a reusable query
 Any post query with custom args lives as a **static method on `Tatami\Queries`** (`lib/Queries.lib.php`), named for intent — **even if only one router calls it**. Routers only ever call named `Queries` methods or the bare default `Timber::get_posts()` (the main loop); trivial default-loop queries stay inline. A `Queries` method is a boundary, not a speculative reuse hook — the class's purpose is router thinness, not just reuse, so a single-caller method does not violate "no abstractions for single-use code." Centralizing keeps query logic in one place, lets routers share it when they do overlap (e.g. `front-page.php` and `single.php` both fetch services), and keeps the `Tatami\Site` class focused on setup rather than data fetching.
@@ -172,7 +176,7 @@ Rules:
 **Card-like patterns have three shapes — pick by how content is supplied:**
 - Content fully described by parameters (title, excerpt, image, url) → **macro**
 - Wraps arbitrary inner markup (a slot/`children` equivalent) → **`embed`** a partial with `{% block %}`s
-- The surrounding grid/list that loops and renders the cards → **module**
+- The surrounding grid/list that loops and renders the cards → **module**, if more than one template renders it; otherwise it stays in the page template
 
 Extract the *markup*, never the styling. A long utility string is a signal to reach
 for one of the above, not to write a CSS class — the utilities stay just as visible,
