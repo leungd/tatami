@@ -129,7 +129,7 @@ Yoast owns all SEO output and the page's single JSON-LD graph. **The theme never
 
 ### FAQs (house tool)
 
-A `faqs` repeater (fixed name; `question` + WYSIWYG `answer`, both required) renders through `modules/faqs.twig` as `<details>`/`<summary>` and becomes FAQPage `mainEntity` in Yoast's graph from the same rows. `page.twig` and `single.twig` include the module at the end of `{% block content %}`. Details: `docs/faqs.md`.
+The base defines the shape of an FAQ, not where it appears. A `faqs` repeater (fixed name; `question` + WYSIWYG `answer`, both required) renders through `modules/faqs.twig` as `<details>`/`<summary>` and becomes FAQPage `mainEntity` in Yoast's graph from the same rows. Nothing in the base includes the module: a site includes it only in the templates that carry FAQs (an FAQ page, a Service single) and narrows the field's location to match. Details: `docs/faqs.md`.
 
 ### Attribution (house tool)
 
@@ -143,7 +143,7 @@ A module is a section that **more than one template renders**, or one driven by 
 3. Keep modules self-contained — they receive data via context, never query directly
 4. Guard on the data so the module no-ops when it's absent (`{% if services %}…{% endif %}`). This lets the same module be dropped into any template; it only renders where the router supplied data.
 
-`{% block modules %}` in `base.twig` is the slot for **site bands**: sections the site repeats below the content on many pages (testimonials, recent posts, a call to action). A section that belongs to the page's own content — its FAQs, its body — goes in `{% block content %}`, so a template that fills the bands slot never has to remember `{{ parent() }}` to keep them. A module always sits at the top level of a block, never inside a placed column: it carries its own `fluid-grid`, and a nested grid recomputes the named lines inside the narrower box.
+`{% block modules %}` in `base.twig` is the slot for **site bands**: sections the site repeats below the content on many pages (testimonials, recent posts, a call to action). A section that belongs to the page's own content — its body, its FAQs where a template has them — goes in `{% block content %}`, so a template that fills the bands slot never has to remember `{{ parent() }}` to keep them. A module always sits at the top level of a block, never inside a placed column: it carries its own `fluid-grid`, and a nested grid recomputes the named lines inside the narrower box.
 
 A section's heading group inside a page template is a `<div>`, never a `<header>` — `<header>` is reserved for the hero, and `pnpm lint` fails a page template that contains one. Do not extract a section into a module just to get a `<header>` past lint.
 
