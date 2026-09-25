@@ -45,9 +45,6 @@
       </div>
     </div>
   </div>
-{% endblock %}
-
-{% block modules %}
   {% include 'modules/faqs.twig' with {
     faqs: post.meta('faqs')
   } %}

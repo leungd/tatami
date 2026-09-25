@@ -8,7 +8,7 @@ Recipe: `recipes/acf/group_SITE_faqs.json` — copy it into `acf-json/` and repl
 
 ## Module
 
-`modules/faqs.twig` renders a `<section>` with a "Frequently Asked Questions" `<h2>` and one `<details>`/`<summary>` per row — the question autoescaped in the `<summary>`, the answer `|raw` (basic-toolbar WYSIWYG). Answers are in the HTML, keyboard-operable and readable with JavaScript off; no script is involved. It uses the house repeater guard (`{% if faqs is iterable and faqs is not empty %}`), so it renders nothing with no rows or with ACF deactivated. `page.twig` and `single.twig` already include it in `{% block modules %}`; a derivative styles it, or overrides the block to place it elsewhere:
+`modules/faqs.twig` renders a `<section>` with a "Frequently Asked Questions" `<h2>` and one `<details>`/`<summary>` per row — the question autoescaped in the `<summary>`, the answer `|raw` (basic-toolbar WYSIWYG). Answers are in the HTML, keyboard-operable and readable with JavaScript off; no script is involved. It uses the house repeater guard (`{% if faqs is iterable and faqs is not empty %}`), so it renders nothing with no rows or with ACF deactivated. `page.twig` and `single.twig` include it at the end of `{% block content %}`, after the body — FAQs are the page's own content, not a site band, so they stay out of `{% block modules %}`. A derivative styles it, or moves the include within its own `content` block; a module goes at the top level of a block, never inside a placed column, because it carries its own `fluid-grid`:
 
 ```twig
 {% include 'modules/faqs.twig' with { faqs: post.meta('faqs') } %}
