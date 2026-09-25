@@ -280,6 +280,13 @@ The theme includes a custom `.fluid-grid` — a 12-column CSS Grid with named li
 
 Two tells you got it wrong: the same `col-[…]` string on more than one sibling (wrap them in a single placed `<div>` instead), or `space-y-*` on an element with no children to space (it belongs on the flowing parent). A region that genuinely spans *different* columns than its neighbor is its own placed child — `partials/hero.twig` is the reference: a full-bleed `heroMedia` (`col-[full-start/full-end]`) beside a content-column body.
 
+### Measurements from a design file
+Figma hands over raw pixel values; they are not a spacing system, and transcribing them as arbitrary values (`lg:py-[0.1875rem]`) reproduces measurement noise, not intent. Stay on the scale:
+- Snap any value within a couple of pixels of a scale step to that step (`3px` → `py-1` or `py-0.5`, matching the neighbouring elements).
+- A value the default scale lacks but the design uses repeatedly (a 20/28/36px rhythm) is a real system — add it to `@theme` once, as a named token, and use the named class.
+- Arbitrary values are for singular, self-evidently meaningful measurements: a logo's max-width, a hero's aspect ratio, a grid placement like `col-[col-3/col-10]`.
+- A breakpoint-specific arbitrary value needs a reason it could state in a comment; if it can't, it is noise.
+
 ### Fluid typography
 Custom `clamp()`-based type scale defined as CSS variables (`--text-xs` through `--text-6xl`). Applied to headings in base styles. Use these for consistent responsive sizing.
 
