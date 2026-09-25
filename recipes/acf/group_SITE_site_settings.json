@@ -1,0 +1,106 @@
+{
+  "key": "group_SITE_site_settings",
+  "title": "Site Settings",
+  "fields": [
+    {
+      "key": "field_SITE_ss_firm_type",
+      "label": "Firm Type",
+      "name": "firm_type",
+      "type": "select",
+      "instructions": "Tells search engines what kind of firm this is.",
+      "choices": {
+        "legal": "Law firm (LegalService)",
+        "accounting": "Accounting firm (AccountingService)",
+        "financial": "Financial firm (FinancialService)",
+        "professional": "Other professional firm (ProfessionalService)"
+      },
+      "default_value": "professional",
+      "return_format": "value"
+    },
+    {
+      "key": "field_SITE_ss_address",
+      "label": "Address",
+      "name": "address",
+      "type": "group",
+      "instructions": "The main office. Enter it exactly as the Google Business Profile shows it.",
+      "layout": "block",
+      "sub_fields": [
+        {
+          "key": "field_SITE_ss_street_address",
+          "label": "Street Address",
+          "name": "street_address",
+          "type": "text",
+          "instructions": "Include the suite or unit, as Google Business Profile writes it."
+        },
+        { "key": "field_SITE_ss_city", "label": "City", "name": "city", "type": "text" },
+        { "key": "field_SITE_ss_province", "label": "Province", "name": "province", "type": "text" },
+        { "key": "field_SITE_ss_postal_code", "label": "Postal Code", "name": "postal_code", "type": "text" },
+        {
+          "key": "field_SITE_ss_country",
+          "label": "Country",
+          "name": "country",
+          "type": "text",
+          "default_value": "Canada"
+        }
+      ]
+    },
+    { "key": "field_SITE_ss_phone_number", "label": "Phone Number", "name": "phone_number", "type": "text" },
+    { "key": "field_SITE_ss_fax_number", "label": "Fax Number", "name": "fax_number", "type": "text" },
+    { "key": "field_SITE_ss_email_address", "label": "Email Address", "name": "email_address", "type": "email" },
+    {
+      "key": "field_SITE_ss_offices",
+      "label": "Additional Offices",
+      "name": "offices",
+      "type": "repeater",
+      "instructions": "Only for firms with more than one office — leave empty on a single-office site. The main office is the Address above.",
+      "layout": "block",
+      "button_label": "Add Office",
+      "sub_fields": [
+        { "key": "field_SITE_ss_office_name", "label": "Name", "name": "name", "type": "text", "required": 1 },
+        {
+          "key": "field_SITE_ss_office_address",
+          "label": "Address",
+          "name": "address",
+          "type": "group",
+          "instructions": "Enter it exactly as the office's Google Business Profile shows it.",
+          "layout": "block",
+          "sub_fields": [
+            {
+              "key": "field_SITE_ss_office_street_address",
+              "label": "Street Address",
+              "name": "street_address",
+              "type": "text",
+              "instructions": "Include the suite or unit, as Google Business Profile writes it."
+            },
+            { "key": "field_SITE_ss_office_city", "label": "City", "name": "city", "type": "text" },
+            { "key": "field_SITE_ss_office_province", "label": "Province", "name": "province", "type": "text" },
+            { "key": "field_SITE_ss_office_postal_code", "label": "Postal Code", "name": "postal_code", "type": "text" },
+            {
+              "key": "field_SITE_ss_office_country",
+              "label": "Country",
+              "name": "country",
+              "type": "text",
+              "default_value": "Canada"
+            }
+          ]
+        },
+        { "key": "field_SITE_ss_office_phone_number", "label": "Phone Number", "name": "phone_number", "type": "text" },
+        { "key": "field_SITE_ss_office_fax_number", "label": "Fax Number", "name": "fax_number", "type": "text" },
+        { "key": "field_SITE_ss_office_email_address", "label": "Email Address", "name": "email_address", "type": "email" }
+      ]
+    },
+    {
+      "key": "field_SITE_ss_area_served",
+      "label": "Area Served",
+      "name": "area_served",
+      "type": "repeater",
+      "instructions": "Regions the firm takes work from, beyond the office cities — e.g. Eastern Ontario. One list for the whole firm; every Service inherits it.",
+      "layout": "table",
+      "button_label": "Add Region",
+      "sub_fields": [
+        { "key": "field_SITE_ss_area_name", "label": "Name", "name": "name", "type": "text", "required": 1 }
+      ]
+    }
+  ],
+  "location": [[{ "param": "options_page", "operator": "==", "value": "site-settings" }]]
+}

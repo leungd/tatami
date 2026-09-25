@@ -1,0 +1,41 @@
+{
+  "key": "group_SITE_attribution",
+  "title": "Attribution",
+  "position": "acf_after_title",
+  "fields": [
+    {
+      "key": "field_SITE_attr_state",
+      "label": "Attribution",
+      "name": "attribution_state",
+      "type": "radio",
+      "instructions": "The one public credit this post carries. It drives the byline, the share-card author, and structured data.",
+      "default_value": "firm",
+      "choices": {
+        "firm": "Written on behalf of the firm",
+        "written_by": "Written by a Professional",
+        "reviewed_by": "Reviewed by a Professional"
+      }
+    },
+    {
+      "key": "field_SITE_attr_person",
+      "label": "Credited Professional",
+      "name": "attribution_person",
+      "type": "post_object",
+      "instructions": "The byline links to their profile. If they are unpublished later, the post credits the firm.",
+      "post_type": ["professional"],
+      "post_status": ["publish"],
+      "allow_null": 1,
+      "return_format": "id",
+      "conditional_logic": [[{ "field": "field_SITE_attr_state", "operator": "!=", "value": "firm" }]]
+    },
+    {
+      "key": "field_SITE_attr_name",
+      "label": "Credited Name",
+      "name": "attribution_name",
+      "type": "text",
+      "instructions": "Auto-filled from the credited Professional on save.",
+      "conditional_logic": [[{ "field": "field_SITE_attr_state", "operator": "!=", "value": "firm" }]]
+    }
+  ],
+  "location": [[{ "param": "post_type", "operator": "==", "value": "post" }]]
+}

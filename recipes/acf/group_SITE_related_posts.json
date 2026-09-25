@@ -1,0 +1,20 @@
+{
+  "key": "group_SITE_related_posts",
+  "title": "Related Posts",
+  "fields": [
+    {
+      "key": "field_SITE_rp_related_categories",
+      "label": "Related Post Categories",
+      "name": "related_categories",
+      "type": "taxonomy",
+      "instructions": "Posts in these categories appear as Related Posts on this page. Leave empty to show none.",
+      "taxonomy": "category",
+      "field_type": "checkbox",
+      "add_term": 0,
+      "save_terms": 0,
+      "load_terms": 0,
+      "return_format": "id"
+    }
+  ],
+  "location": [[{ "param": "post_type", "operator": "==", "value": "service" }]]
+}

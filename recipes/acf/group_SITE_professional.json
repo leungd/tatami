@@ -1,0 +1,36 @@
+{
+  "key": "group_SITE_professional",
+  "title": "Professional",
+  "fields": [
+    {
+      "key": "field_SITE_pro_job_title",
+      "label": "Job Title",
+      "name": "job_title",
+      "type": "text",
+      "instructions": "Shown in schema as the Person's job title, e.g. Partner, Associate."
+    },
+    {
+      "key": "field_SITE_pro_profile_links",
+      "label": "Profile Links",
+      "name": "profile_links",
+      "type": "repeater",
+      "instructions": "This person's listings elsewhere, which confirm who they are to search engines. Priorities: the regulator's directory listing (e.g. the Law Society directory), then LinkedIn.",
+      "layout": "table",
+      "button_label": "Add Link",
+      "sub_fields": [
+        { "key": "field_SITE_pro_profile_link_url", "label": "URL", "name": "url", "type": "url", "required": 1 }
+      ]
+    },
+    {
+      "key": "field_SITE_pro_services",
+      "label": "Services",
+      "name": "services",
+      "type": "relationship",
+      "instructions": "Services this Professional practises — listed on their Person as knowsAbout.",
+      "post_type": ["service"],
+      "filters": ["search"],
+      "return_format": "id"
+    }
+  ],
+  "location": [[{ "param": "post_type", "operator": "==", "value": "professional" }]]
+}

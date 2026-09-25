@@ -1,0 +1,28 @@
+{
+  "key": "group_SITE_faqs",
+  "title": "FAQs",
+  "fields": [
+    {
+      "key": "field_SITE_faq_faqs",
+      "label": "FAQs",
+      "name": "faqs",
+      "type": "repeater",
+      "instructions": "Each question shows on the page as an expandable question with its answer, and is included in the page's structured data for search engines and AI tools. Leave empty for no FAQ section.",
+      "layout": "block",
+      "button_label": "Add Question",
+      "sub_fields": [
+        { "key": "field_SITE_faq_question", "label": "Question", "name": "question", "type": "text", "required": 1 },
+        {
+          "key": "field_SITE_faq_answer",
+          "label": "Answer",
+          "name": "answer",
+          "type": "wysiwyg",
+          "toolbar": "basic",
+          "media_upload": 0,
+          "required": 1
+        }
+      ]
+    }
+  ],
+  "location": [[{ "param": "post_type", "operator": "==", "value": "page" }]]
+}
