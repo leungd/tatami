@@ -1,123 +1,54 @@
-# Tatami Theme
+# Tatami
 
-A foundational WordPress starter theme built with modern development tools.
-
-## Features
-
-- **Timber/Twig** - Template engine for clean, maintainable templates
-- **Vite** - Fast development server and optimized production builds
-- **Tailwind CSS 4** - Utility-first CSS framework with typography plugin
-- **Modern JavaScript** - ES modules support with Vite
+A WordPress base theme for professional-services sites, built on Timber/Twig, Tailwind CSS 4 and Vite. Each site is a **derivative**: a copy of this theme that pulls updates from here and keeps everything site-specific to itself.
 
 ## Requirements
 
 - PHP 8.0+
 - WordPress 6.x
 - Composer
-- Node.js & pnpm
+- Node.js and pnpm (see `.nvmrc`)
+- ACF Pro (optional at runtime; the theme renders without it)
+- Yoast SEO (required at launch by house policy; owns SEO output and the schema graph)
 
 ## Installation
 
-1. Clone or copy this theme into your WordPress themes directory
-2. Install PHP dependencies: `composer install`
-3. Install JavaScript dependencies: `pnpm install`
+1. Copy the theme into `wp-content/themes/`
+2. `composer install`
+3. `pnpm install`
 
-## Development
+## Commands
 
-Start the Vite development server:
 ```bash
-pnpm dev
+pnpm dev        # Vite dev server with HMR
+pnpm build      # Production build → build/ (never committed; built at deploy)
+pnpm preview    # Preview the production build
+pnpm lint       # ESLint + the Twig hero guardrail
+pnpm test       # Node tests (linter, ACF recipes) + PHP tests of the pure helpers
+pnpm format     # Prettier for JS, CSS and Twig
 ```
 
-Build for production:
-```bash
-pnpm build
-```
+## Where things are
 
-Lint JavaScript:
-```bash
-pnpm lint
-```
+| Path | What it is |
+|---|---|
+| `AGENTS.md` | The rules: stack, conventions, house-tool invariants, definition of done. Read this first. |
+| `docs/` | One reference doc per house tool and convention (hero, schema, attribution, FAQs, related posts, ACF fields, launch checklist) |
+| `recipes/acf/` | ACF field-group JSON for the house tools, with a `SITE` placeholder to copy into a site's `acf-json/` |
+| `CONTEXT.md` | Glossary of the terms the theme and its docs use (Firm, Professional, Service, Host, …) |
+| `lib/` | PHP classes in the `Tatami\` namespace: site setup, queries, assets, Vite bridge, schema, attribution, social profiles |
+| `views/` | Twig templates: `base.twig`, page and single templates, `partials/`, `macros/`, `modules/` |
+| `src/css/tailwind.css` | Tailwind configuration (CSS-first), design tokens, the fluid grid and type scale |
+| `src/js/main.js` | JavaScript entry point; imports the CSS |
+| `tests/` | PHP test runner for the pure helpers |
+| `scripts/` | The Twig linter and the node tests |
 
-Format code:
-```bash
-pnpm format
-```
+## Building a site on Tatami
 
-## Configuration
+Clone the theme, point its remote at this repo as a pull-only `upstream`, then follow "Extending for a new site" in `AGENTS.md`. Before launch, work through `docs/launch.md`.
 
-### Tailwind
-Tailwind 4 uses CSS-based configuration. Customize the theme in `src/css/tailwind.css` using `@theme` directives. Brand colors, spacing, and other design tokens are configured directly in the CSS file.
-
-### Fluid Grid System
-
-The theme includes a 12-column fluid grid system (`.fluid-grid`) with named grid lines for flexible layout control:
-
-```html
-<div class="fluid-grid">
-    <div class="col-[content-start/content-end]">Full content width</div>
-    <div class="col-[col-3/col-10]">Custom column span</div>
-    <div class="col-[full-start/full-end]">Full bleed</div>
-</div>
-```
-
-Use Tailwind's arbitrary value syntax for grid column placement.
-
-### Vite Integration
-
-Vite is integrated via a custom Vite plugin (`wordpress-vite` in `vite.config.js`) that:
-- Writes a `build/hot` file when the dev server is running
-- Cleans up the hot file on server stop
-- Triggers full-page reload on `.php` and `.twig` file changes
-
-The `lib/Vite.lib.php` class (`Tatami\Vite`) provides `asset()`, `css()`, and `enqueue_module()` methods for resolving Vite-built assets in WordPress.
-
-### Theme Files
-
-#### Core PHP Files
-- `functions.php` - Main theme setup
-- `lib/Site.lib.php` - Theme functionality, Timber context, hardening (`Tatami\Site`)
-- `lib/Assets.lib.php` - Asset enqueueing (`Tatami\Assets`)
-- `lib/Vite.lib.php` - Vite integration for WordPress
-- `lib/Queries.lib.php` - Reusable Timber queries (`Tatami\Queries`)
-
-#### Template Files (Twig)
-- `views/base.twig` - Base template with HTML structure
-- `views/page.twig` - Default page template
-- `views/single.twig` - Single post template
-- `views/archive.twig` - Archive/blog template
-- `views/search.twig` - Search results template
-- `views/404.twig` - 404 error template
-- `views/header.twig` - Site header
-- `views/footer.twig` - Site footer
-- `views/partials/` - Reusable template partials
-
-## Customization
-
-### Adding Custom Post Types
-Add your custom post types in the `register_post_types()` method in `lib/Site.lib.php`.
-
-### Adding Custom Taxonomies
-Add your custom taxonomies in the `register_taxonomies()` method in `lib/Site.lib.php`.
-
-### Timber Context
-Modify the global Timber context in the `add_to_context()` method in `lib/Site.lib.php`. This is where you can add site-wide variables accessible in all Twig templates.
-
-### Custom Twig Filters
-Add custom Twig filters in the `add_to_twig()` method in `lib/Site.lib.php`.
-
-## Theme Options
-
-This theme is designed to work with ACF (Advanced Custom Fields) options pages. Configured options are available in Twig templates via `{{ options }}`. ACF is optional — the theme gracefully handles its absence.
-
-## Assets
-
-### Styles
-Main stylesheet: `src/css/tailwind.css`
-
-### Scripts
-Main JavaScript: `src/js/main.js`
+Base changes are made here by the maintainer. A derivative reports a base bug or fix as a GitHub issue on this repo; it never pushes or opens a pull request.
 
 ## License
 
-This theme is licensed under the terms specified in the LICENSE file.
+See `LICENSE`.
