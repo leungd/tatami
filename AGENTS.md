@@ -15,7 +15,7 @@ This file is the always-loaded core: identity, rules, and the invariants of each
 | Page headers, `<h1>` placement, `partials/hero.twig`, featured images | `docs/hero.md` |
 | Yoast's schema graph, `Tatami\Schema`, Firm/Office/Professional/Service facts, the address macro, social profiles | `docs/schema.md` |
 | A blog post's byline, `Tatami\Attribution`, author meta | `docs/attribution.md` |
-| The `faqs` field, `modules/faqs.twig`, FAQPage schema | `docs/faqs.md` |
+| The `faqs` field, FAQ markup, FAQPage schema | `docs/faqs.md` |
 | Posts shown on a host page, `related_categories`, `Tatami\Queries::related_posts()` | `docs/related-posts.md` |
 | Any ACF field group, `acf-json/`, return formats, the options page | `docs/acf-fields.md` |
 | Preparing a site for production | `docs/launch.md` |
@@ -51,7 +51,7 @@ views/                 → All Twig templates
   base.twig            → Root HTML shell — all page templates extend this
   partials/            → Reusable fragments (head, hero, pagination, post-list)
   macros/              → Twig macros for repeated patterns (images, addresses)
-  modules/             → Sections rendered by more than one template (FAQs, related posts, services grid)
+  modules/             → Sections rendered by more than one template (related posts, services grid, testimonials)
 src/css/tailwind.css   → Tailwind config + custom utilities + component styles
 src/js/main.js         → JS entry point — imports CSS, initializes modules
 docs/                  → One reference doc per house tool and convention (see "Where the details live")
@@ -129,14 +129,14 @@ Yoast owns all SEO output and the page's single JSON-LD graph. **The theme never
 
 ### FAQs (house tool)
 
-The base defines the shape of an FAQ, not where it appears. A `faqs` repeater (fixed name; `question` + WYSIWYG `answer`, both required) renders through `modules/faqs.twig` as `<details>`/`<summary>` and becomes FAQPage `mainEntity` in Yoast's graph from the same rows. Nothing in the base includes the module: a site includes it only in the templates that carry FAQs (an FAQ page, a Service single) and narrows the field's location to match. Details: `docs/faqs.md`.
+The base fixes the field and the disclosure pattern, nothing visual. A `faqs` repeater (fixed name; `question` + WYSIWYG `answer`, both required) is what `Tatami\Schema` turns into FAQPage `mainEntity` in Yoast's graph, automatically, on any singular that has rows. On the page each row is a native `<details>`/`<summary>` — the answer in the HTML, no script — written into the template that carries FAQs; the base ships no FAQ template or module. Details and the markup pattern: `docs/faqs.md`.
 
 ### Attribution (house tool)
 
 A post's public credit is the Firm, "Written by" a Professional, or "Reviewed by" a Professional — never the WordPress user. `Tatami\Attribution::resolve()` is the one resolver behind the byline, Yoast's author meta, the share card and the graph; `single.php` exposes it as `attribution`. Field names `attribution_state`, `attribution_person`, `attribution_name` are fixed. Details: `docs/attribution.md`.
 
 ### Add a reusable module
-A module is a section that **more than one template renders**, or one driven by data any router could supply (a services grid, testimonials, Related Posts, FAQs). A section that exists on one page is not a module: it lives inline in that page template, however long the template gets. A module carries a contract (data in via context, no-op when absent) and a name in a shared namespace — giving that to single-use markup is an abstraction with one caller. Extract when the second consumer appears, not before. The tell: a module included by one template and fed only by that template's router is page markup in a costume; inline it. The house-tool modules (`faqs`, `related-posts`) are reusable by design.
+A module is a section that **more than one template renders**, or one driven by data any router could supply (a services grid, testimonials, Related Posts, FAQs). A section that exists on one page is not a module: it lives inline in that page template, however long the template gets. A module carries a contract (data in via context, no-op when absent) and a name in a shared namespace — giving that to single-use markup is an abstraction with one caller. Extract when the second consumer appears, not before. The tell: a module included by one template and fed only by that template's router is page markup in a costume; inline it. A site's `related-posts` module is reusable by design.
 
 1. Create `views/modules/{name}.twig`
 2. Include it from page templates: `{% include 'modules/{name}.twig' with { data: someData } %}`

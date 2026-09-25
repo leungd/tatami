@@ -1,30 +1,33 @@
 # FAQs (house tool)
 
-The base defines the **shape** of an FAQ — the field, the markup, the schema — and nothing else. It does not decide which pages carry one. Nothing in the base includes the module; a site includes it only in the templates that have FAQs, if the sitemap has any at all: typically a dedicated FAQ page (`page-faqs.twig`), sometimes a Service single with its own questions. The same shape serves both, so a site never re-invents FAQ markup or schema per placement.
+The base fixes two things about an FAQ and leaves the rest to the site. The **field name**, because `Tatami\Schema` builds the page's FAQPage schema from it. The **disclosure pattern**, because answers must be in the HTML, keyboard-operable, and readable with JavaScript off. How FAQs look, and which pages carry them, is the site's design. The base ships no FAQ template or module; a site writes the markup into the template that has FAQs — typically a dedicated FAQ page (`page-faqs.twig`), sometimes a Service single — and extracts its own module only when a second template needs it.
 
 ## Field (per site)
 
-A `faqs` repeater of `question` (text) and `answer` (basic-toolbar WYSIWYG), both `required` — the in-row exception, since a question without an answer is meaningless. The field *name* is fixed — `Tatami\Schema` reads it.
+A `faqs` repeater of `question` (text) and `answer` (basic-toolbar WYSIWYG), both `required` — the in-row exception, since a question without an answer is meaningless. The field *name* is fixed.
 
 Recipe: `recipes/acf/group_SITE_faqs.json` — copy it into `acf-json/`, replace `SITE` with the site prefix (see `docs/acf-fields.md`), and **narrow the location** to where FAQs live. The recipe's `post_type == page` is a placeholder: point it at the FAQ page (`page` / `page_template`) or the post type that carries per-item questions (`post_type == service`). One location group per placement.
 
-## Module
+## Markup
 
-`modules/faqs.twig` is the reference markup: a self-placing `<section class="fluid-grid">` with a "Frequently Asked Questions" `<h2>` and one `<details>`/`<summary>` per row — the question autoescaped in the `<summary>`, the answer `|raw`. Answers are in the HTML, keyboard-operable and readable with JavaScript off; no script is involved. It uses the house repeater guard (`{% if faqs is iterable and faqs is not empty %}`), so it renders nothing with no rows or with ACF deactivated. A derivative styles it and, if the section heading should differ per placement, passes a `heading` or overrides the module — but keeps `<details>`/`<summary>`, the `|raw` answer, and the guard.
-
-Include it at the top level of `{% block content %}` in the template that carries FAQs — never inside a placed column (it carries its own grid), and not in `{% block modules %}`, which is for site bands:
+One native `<details>`/`<summary>` per row: the question autoescaped in the `<summary>`, the answer `|raw` (it is WYSIWYG), behind the house repeater guard so nothing renders with no rows or with ACF deactivated. No script. The heading, the wrapper, and every class are the site's:
 
 ```twig
-{# page-faqs.twig, or single-service.twig #}
-{% block content %}
-  <div class="fluid-grid">
-    <div class="col-[content-start/content-end]">
-      <div class="prose">{{ post.content|raw }}</div>
-    </div>
-  </div>
-  {% include 'modules/faqs.twig' with { faqs: post.meta('faqs') } %}
-{% endblock %}
+{% set faqs = post.meta('faqs') %}
+{% if faqs is iterable and faqs is not empty %}
+  <section aria-labelledby="faqs-heading">
+    <h2 id="faqs-heading">{{ __('Frequently Asked Questions', 'tatami') }}</h2>
+    {% for faq in faqs %}
+      <details>
+        <summary>{{ faq.question }}</summary>
+        <div class="prose">{{ faq.answer|raw }}</div>
+      </details>
+    {% endfor %}
+  </section>
+{% endif %}
 ```
+
+A custom-scripted accordion is not a substitute: `<details>` gives the open/closed state, keyboard handling, and JavaScript-off fallback natively, and styles freely (`summary::marker`, `details[open]`).
 
 ## Schema
 
