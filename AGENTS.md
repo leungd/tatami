@@ -117,7 +117,7 @@ The standard setup is a static "Home" page + a "Blog" posts page assigned under 
 
 ### Hero (house tool)
 
-Every page's hero renders from `partials/hero.twig` through `{% block hero %}` in `base.twig`. **Never hand-roll a `<header>` in a `single-*` / `page-*` template** — override the block, `embed` the partial, and extend its `heroBody` / `heroMedia` blocks (`pnpm lint` enforces this floor). **Exactly one `<h1>` per page, on the keyword heading**: the hero title stays a `<p>` label unless the title is the whole heading; heading level is semantic, not visual. Routers assign `featured_image` via `Tatami\Queries::featured_image_with_fallback($post)`; templates read `.src`, `.alt`, `.width`, `.height`. Full write-up, the `single.twig` reference, and the page-structure rules: `docs/hero.md`.
+Every page's hero renders from `partials/hero.twig` through `{% block hero %}` in `base.twig`. **Never hand-roll a `<header>` in a `single-*` / `page-*` template** — override the block, `embed` the partial, and extend its `heroBody` / `heroMedia` blocks (`pnpm lint` enforces this floor). The partial is a frame, not a look: a different page-top layout goes inside `heroBody`; a page that genuinely can't use it may skip it only on the conditions in `docs/hero.md`. **Exactly one `<h1>` per page, on the keyword heading**: the hero title stays a `<p>` label unless the title is the whole heading; heading level is semantic, not visual. Routers assign `featured_image` via `Tatami\Queries::featured_image_with_fallback($post)`; templates read `.src`, `.alt`, `.width`, `.height`. Full write-up, the `single.twig` reference, and the page-structure rules: `docs/hero.md`.
 
 ### Related Posts (house tool)
 
@@ -423,7 +423,7 @@ pnpm format           # Prettier (JS, CSS, Twig)
 - **No `echo` in PHP template files** — all output goes through Twig
 - **No npm or yarn** — this project uses pnpm exclusively
 - **No hand-written JSON-LD, microdata, or head meta** — Yoast owns SEO output; extend its graph via `Tatami\Schema`
-- **No hand-rolled page headers** — a `single-*`/`page-*` template must not contain its own `<header>`; override `{% block hero %}` and reuse `partials/hero.twig` (enforced by `pnpm lint`)
+- **No hand-rolled page headers** — a `single-*`/`page-*` template must not contain its own `<header>`; override `{% block hero %}` and reuse `partials/hero.twig`, or skip it per `docs/hero.md` (enforced by `pnpm lint`)
 - **No ACF field groups authored in the admin editor** — `acf-json/` is the sole author; house-tool groups start from `recipes/acf/`
 - **No ACF repeater for social links** — they come from Yoast → Site representation
 

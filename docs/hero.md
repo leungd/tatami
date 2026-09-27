@@ -1,6 +1,6 @@
 # Hero (house tool)
 
-Every page's hero renders from `partials/hero.twig`, pulled in by `{% block hero %}` in `base.twig`. **Never hand-roll a `<header>` in a `single-*` / `page-*` template** — override the block and reuse the partial. The partial exposes named blocks so derivatives *extend* the shell instead of duplicating it:
+Every page's hero renders from `partials/hero.twig`, pulled in by `{% block hero %}` in `base.twig`, unless the page skips it under the rules in "Skipping the hero" below. **Never hand-roll a `<header>` in a `single-*` / `page-*` template** — override the block and reuse the partial. The partial exposes named blocks so derivatives *extend* the shell instead of duplicating it:
 
 - `heroMedia` — the optional full-bleed featured image
 - `heroBody` — the title region (defaults to `<p>{{ title }}</p>`)
@@ -22,6 +22,18 @@ Every page's hero renders from `partials/hero.twig`, pulled in by `{% block hero
 ```
 
 `views/single.twig` is the working reference: on the `post` type it adds the published date, plus an updated date when `post.modified_date` falls on a different calendar day, each as `<time datetime>` (ISO 8601) wrapping a `__()`/`|format` label.
+
+## Other layouts
+
+The partial is a frame, not a look: a `<header class="fluid-grid">` with slots. For a page top that isn't image + title (e.g. an intro beside a map), override `heroMedia` to nothing and lay the columns out inside `heroBody`, text first, so the reading order matches the visual order when the columns stack.
+
+## Skipping the hero
+
+A page whose top section genuinely doesn't fit the frame may skip it. Try the frame first; skipping is the exception. The template:
+
+- empties `{% block hero %}` and builds the section in `{% block content %}` as a `<div class="fluid-grid">`, never a `<header>`;
+- still carries exactly one `<h1>`;
+- keeps a one-line `{# … #}` note saying the section sits outside the hero by design, so nobody moves it back into the partial.
 
 ## Featured images
 
