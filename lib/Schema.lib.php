@@ -47,7 +47,8 @@
  *     'page' => [
  *       'kind'        => 'post',
  *       'attribution' => [ 'state' => 'written_by', 'name' => 'Jane Doe', 'url' => 'https://example.com/team/jane-doe/' ],
- *                        // firm | written_by | reviewed_by; url is the Professional's profile (null for firm); Person @id is <url>#person
+ *                        // firm | written_by | reviewed_by; url is the Professional's profile, null for firm or a name-only credit;
+ *                        // Person @id is <url>#person, or for a name-only credit <site>/#/schema/credited-person/<md5 of the lowercased name>
  *       'faqs'        => [ … ],
  *     ],
  *   ]
@@ -305,8 +306,10 @@ class Schema {
 
     private static function with_attribution( array $graph, array $attribution, string $org_id ): array {
         $url   = $attribution['url'] ?? null;
+        $url   = is_string( $url ) && '' !== $url ? $url : null;
+        $name  = trim( (string) ( $attribution['name'] ?? '' ) );
         $state = $attribution['state'] ?? 'firm';
-        if ( ! in_array( $state, [ 'written_by', 'reviewed_by' ], true ) || ! is_string( $url ) || '' === $url ) {
+        if ( ! in_array( $state, [ 'written_by', 'reviewed_by' ], true ) || '' === $name ) {
             $state = 'firm';
         }
 
@@ -317,7 +320,12 @@ class Schema {
                 && str_contains( (string) ( $piece['@id'] ?? '' ), '#/schema/person/' ) )
         ) );
 
-        $person = 'firm' === $state ? null : [ '@id' => $url . '#person' ];
+        // A name-only credit has no profile page, so its @id is keyed by name to stay one Entity across posts.
+        $person = match ( true ) {
+            'firm' === $state => null,
+            null !== $url     => [ '@id' => $url . '#person' ],
+            default           => [ '@id' => strstr( $org_id, '#', true ) . '#/schema/credited-person/' . md5( mb_strtolower( $name ) ) ],
+        };
         $author = 'written_by' === $state ? $person : [ '@id' => $org_id ];
 
         foreach ( $graph as $i => $piece ) {
@@ -340,9 +348,8 @@ class Schema {
             $graph[] = [
                 '@type' => 'Person',
                 '@id'   => $person['@id'],
-                'name'  => $attribution['name'] ?? '',
-                'url'   => $url,
-            ];
+                'name'  => $name,
+            ] + ( $url ? [ 'url' => $url ] : [] );
         }
 
         return $graph;

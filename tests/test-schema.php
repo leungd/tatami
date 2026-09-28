@@ -432,8 +432,25 @@ assert_equal( $person_ref, $reviewed[1]['reviewedBy'] ?? null, 'reviewed_by -> W
 assert_equal( [ $person_id ], array_column( schema_people( $reviewed ), '@id' ), 'reviewed_by -> Professional Person present, user Person removed' );
 assert_true( ! str_contains( json_encode( $reviewed, JSON_UNESCAPED_SLASHES ), '/author/' ), 'reviewed_by -> no author-archive URL in the graph' );
 
-assert_equal( $firm_graph, Schema::extend( $post_graph, attribution_facts( 'written_by', null, 'Example Law' ) ), 'written_by without a Professional url -> same as firm' );
-assert_equal( $firm_graph, Schema::extend( $post_graph, attribution_facts( 'reviewed_by', '', 'Example Law' ) ), 'reviewed_by with an empty url -> same as firm' );
+$credited_id = 'https://example.com/#/schema/credited-person/' . md5( 'jane doe' );
+$name_only   = Schema::extend( $post_graph, attribution_facts( 'written_by', null ) );
+assert_equal( [ '@id' => $credited_id ], $name_only[0]['author'] ?? null, 'written_by without a profile -> Article author is the named Person' );
+assert_equal(
+    [ [ '@type' => 'Person', '@id' => $credited_id, 'name' => 'Jane Doe' ] ],
+    schema_people( $name_only ),
+    'written_by without a profile -> one name-only Person, no url, user Person removed'
+);
+assert_equal(
+    $credited_id,
+    schema_people( Schema::extend( $post_graph, attribution_facts( 'written_by', '', 'JANE DOE' ) ) )[0]['@id'] ?? null,
+    'name-only Person @id ignores case and treats an empty url as none'
+);
+$reviewed_name_only = Schema::extend( $post_graph, attribution_facts( 'reviewed_by', null ) );
+assert_equal( $org_ref, $reviewed_name_only[0]['author'] ?? null, 'reviewed_by without a profile -> Article author is the Organization' );
+assert_equal( [ '@id' => $credited_id ], $reviewed_name_only[1]['reviewedBy'] ?? null, 'reviewed_by without a profile -> reviewedBy the named Person' );
+
+assert_equal( $firm_graph, Schema::extend( $post_graph, attribution_facts( 'written_by', $pro_url, '' ) ), 'written_by with an empty name -> same as firm' );
+assert_equal( $firm_graph, Schema::extend( $post_graph, attribution_facts( 'reviewed_by', null, '  ' ) ), 'reviewed_by with a blank name -> same as firm' );
 assert_equal( $firm_graph, Schema::extend( $post_graph, attribution_facts( 'ghostwritten', $pro_url, 'Example Law' ) ), 'unknown state -> same as firm' );
 
 $page_author              = $post_graph;

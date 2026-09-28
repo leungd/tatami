@@ -12,8 +12,8 @@
       "default_value": "firm",
       "choices": {
         "firm": "Written on behalf of the firm",
-        "written_by": "Written by a Professional",
-        "reviewed_by": "Reviewed by a Professional"
+        "written_by": "Written by a person",
+        "reviewed_by": "Reviewed by a person"
       }
     },
     {
@@ -21,7 +21,7 @@
       "label": "Credited Professional",
       "name": "attribution_person",
       "type": "post_object",
-      "instructions": "The byline links to their profile. If they are unpublished later, the post credits the firm.",
+      "instructions": "Optional. The byline links to their profile while it is published.",
       "post_type": ["professional"],
       "post_status": ["publish"],
       "allow_null": 1,
@@ -33,7 +33,7 @@
       "label": "Credited Name",
       "name": "attribution_name",
       "type": "text",
-      "instructions": "Auto-filled from the credited Professional on save.",
+      "instructions": "The name the post is credited to. Auto-filled from the credited Professional on save; type it for someone without a profile. It stays if the profile is later unpublished.",
       "conditional_logic": [[{ "field": "field_SITE_attr_state", "operator": "!=", "value": "firm" }]]
     }
   ],

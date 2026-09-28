@@ -3,11 +3,13 @@
  * Attribution — the one public credit a blog post carries.
  *
  * Exactly one of three states: firm (default), written_by, reviewed_by a
- * Professional. Every public credit surface — the template byline, Yoast's
- * author meta, the share-card row, and the schema graph (through
- * Tatami\Schema) — derives from resolve(), never from the WordPress user
- * who entered the post. Fields (per site): see "Attribution (house tool)"
- * in AGENTS.md.
+ * named person. The Credited Name is stored as text on the post so it
+ * survives the Professional's profile being unpublished; the Professional
+ * only adds a profile link while published. Every public credit surface —
+ * the template byline, Yoast's author meta, the share-card row, and the
+ * schema graph (through Tatami\Schema) — derives from resolve(), never from
+ * the WordPress user who entered the post. Fields (per site): see
+ * "Attribution (house tool)" in AGENTS.md.
  *
  *   $context['attribution'] = Tatami\Attribution::resolve( $post->ID );
  *   // [ 'state' => 'written_by', 'label' => 'Written by', 'name' => 'Jane Doe', 'url' => 'https://…/jane-doe/' ]
@@ -30,9 +32,11 @@ class Attribution {
     }
 
     /**
-     * A personal credit needs a published Professional; anything missing,
-     * unpublished, or of the wrong post type degrades to the Firm. Without
-     * ACF every post credits the Firm.
+     * A personal credit needs a name: the typed Credited Name, or the
+     * published Professional's title when none is typed. No name, or an
+     * unknown state, degrades to the Firm. The url is the profile, only
+     * while that Professional is published. Without ACF every post credits
+     * the Firm.
      *
      * @return array{state:string,label:string,name:string,url:?string}
      */
@@ -54,17 +58,21 @@ class Attribution {
         }
 
         $professional_id = (int) get_field( 'attribution_person', $post_id );
-        if ( ! self::is_published_professional( $professional_id ) ) {
+        $published       = self::is_published_professional( $professional_id );
+
+        $name = trim( (string) get_field( 'attribution_name', $post_id ) );
+        if ( '' === $name && $published ) {
+            $name = html_entity_decode( get_the_title( $professional_id ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+        }
+        if ( '' === $name ) {
             return $firm;
         }
 
-        // The live title, not attribution_name: the stored copy is refreshed
-        // only when the post is saved, so it goes stale when a Professional is renamed.
         return [
             'state' => $state,
             'label' => 'reviewed_by' === $state ? __( 'Reviewed by', 'tatami' ) : __( 'Written by', 'tatami' ),
-            'name'  => html_entity_decode( get_the_title( $professional_id ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ),
-            'url'   => trailingslashit( get_permalink( $professional_id ) ),
+            'name'  => $name,
+            'url'   => $published ? trailingslashit( get_permalink( $professional_id ) ) : null,
         ];
     }
 

@@ -29,7 +29,7 @@ A person at the Firm who has their own profile page — a lawyer, advisor, accou
 _Avoid_: Lawyer, team member, staff, person (each is either firm-specific or too broad)
 
 **Attribution**:
-The credit a blog post publicly carries: the Firm itself, "Written by" a Professional, or "Reviewed by" a Professional. It deliberately ignores the WordPress user who entered the post.
+The credit a blog post publicly carries: the Firm itself, "Written by" a named person, or "Reviewed by" a named person. The typed name is the credit; a Professional's profile only adds a link, so a post keeps its credit when the profile is unpublished. It deliberately ignores the WordPress user who entered the post.
 _Avoid_: Author, byline (both suggest the WordPress user account)
 
 **Office**:
