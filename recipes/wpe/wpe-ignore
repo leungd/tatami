@@ -19,7 +19,7 @@ Thumbs.db
 .idea/
 
 # Version control
-.git/
+.git
 .gitignore
 
 # Local WP
