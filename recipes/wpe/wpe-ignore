@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+
+# Build tools & configs
+.sass-cache/
+.npm/
+package-lock.json
+yarn.lock
+
+# Source maps
+*.map
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+
+# Version control
+.git/
+.gitignore
+
+# Local WP
+local-xdebuginfo.php
+
+# Theme dev-only files (build/ and vendor/ must still ship)
+wp-content/themes/tatami/.claude/
+wp-content/themes/tatami/docs/
+wp-content/themes/tatami/recipes/
+wp-content/themes/tatami/tests/
+wp-content/themes/tatami/scripts/
+wp-content/themes/tatami/src/
+wp-content/themes/tatami/*.md
+wp-content/themes/tatami/composer.json
+wp-content/themes/tatami/composer.lock
+wp-content/themes/tatami/package.json
+wp-content/themes/tatami/pnpm-lock.yaml
+wp-content/themes/tatami/pnpm-workspace.yaml
+wp-content/themes/tatami/vite.config.js
+wp-content/themes/tatami/eslint.config.js
+wp-content/themes/tatami/.editorconfig
+wp-content/themes/tatami/.nvmrc
+wp-content/themes/tatami/.prettierignore
+wp-content/themes/tatami/.prettierrc.json

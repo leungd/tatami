@@ -19,6 +19,7 @@ This file is the always-loaded core: identity, rules, and the invariants of each
 | Posts shown on a host page, `related_categories`, `Tatami\Queries::related_posts()` | `docs/related-posts.md` |
 | Any ACF field group, `acf-json/`, return formats, the options page | `docs/acf-fields.md` |
 | Preparing a site for production | `docs/launch.md` |
+| Pushing to WP Engine, `.wpe-push-ignore` / `.wpe-pull-ignore`, `recipes/wpe/` | `docs/deploy.md` |
 
 Vocabulary (Firm, Professional, Service, Host, House tool, Base plumbing, Site surface, …) is defined in `CONTEXT.md`; use those terms, not their listed alternatives.
 
@@ -35,6 +36,7 @@ Vocabulary (Firm, Professional, Service, Host, House tool, Base plumbing, Site s
 | PHP deps | Composer | Timber loaded via `vendor/autoload.php` |
 | JS deps | pnpm | Lockfile is `pnpm-lock.yaml` — never use npm or yarn |
 | Quality | ESLint + Prettier | Prettier has Twig + Tailwind plugins configured |
+| Hosting | WP Engine | House policy: deployed from Local with Connect push/pull; nothing builds on the server (`docs/deploy.md`) |
 
 ## Architecture
 
@@ -56,6 +58,7 @@ src/css/tailwind.css   → Tailwind config + custom utilities + component styles
 src/js/main.js         → JS entry point — imports CSS, initializes modules
 docs/                  → One reference doc per house tool and convention (see "Where the details live")
 recipes/acf/           → ACF field-group JSON for the house tools, with a SITE placeholder; copied into a site's acf-json/
+recipes/wpe/           → The site's WP Engine push/pull ignore file; copied into app/public/ under both names
 tests/run.php          → Standalone PHP test runner for pure helpers (loads tests/test-*.php)
 CONTEXT.md             → Glossary of house terms
 ```
@@ -393,11 +396,11 @@ pnpm dev              # Start Vite dev server (HMR, full-page reload on PHP/Twig
 pnpm build            # Production build → build/ directory with manifest
 pnpm preview          # Preview production build locally
 pnpm lint             # ESLint + Twig hero-guardrail (no page template may hand-roll a <header>)
-pnpm test             # Node tests (linter, ACF recipes), then PHP tests of the pure helpers (php tests/run.php)
+pnpm test             # Node tests (linter, recipes), then PHP tests of the pure helpers (php tests/run.php)
 pnpm format           # Prettier (JS, CSS, Twig)
 ```
 
-`tests/run.php` runs with plain `php` — no WordPress, no PHPUnit — and exits without output unless run from the CLI. It loads the pure libs under test, then every `tests/test-*.php`, and exits 1 on any failure. Shared helpers: `assert_equal()`, `assert_true()`, and `yoast_graph_fixture( 'post' | 'front' | 'professional' | 'service' )`, a realistic Yoast 22+ graph. `scripts/recipes.test.mjs` checks that every file in `recipes/acf/` parses and keeps the `SITE` placeholder in every key.
+`tests/run.php` runs with plain `php` — no WordPress, no PHPUnit — and exits without output unless run from the CLI. It loads the pure libs under test, then every `tests/test-*.php`, and exits 1 on any failure. Shared helpers: `assert_equal()`, `assert_true()`, and `yoast_graph_fixture( 'post' | 'front' | 'professional' | 'service' )`, a realistic Yoast 22+ graph. `scripts/recipes.test.mjs` checks that every file in `recipes/acf/` parses and keeps the `SITE` placeholder in every key, and that every top-level theme entry either ships or is excluded by `recipes/wpe/wpe-ignore`, never both.
 
 ### How Vite integration works
 - **Dev:** Vite writes `build/hot` file → `Vite.lib.php` detects it → assets served from dev server with HMR
@@ -409,7 +412,7 @@ pnpm format           # Prettier (JS, CSS, Twig)
 1. Run `pnpm build` to ensure production build succeeds
 2. Run `pnpm lint` and `pnpm format`
 3. Never commit `node_modules/`, `vendor/`, or anything under `build/`
-4. `build/` is never committed — Tatami is a base theme; sites build assets at deploy time (`pnpm build`). A missing build fails soft: the site renders unstyled and logs the error. `acf-json/` should be committed.
+4. `build/` is never committed — Tatami is a base theme; a site runs `pnpm build` before every push, and the push carries `build/` (WP Engine never builds; see `docs/deploy.md`). A missing build fails soft: the site renders unstyled and logs the error. `acf-json/` should be committed.
 
 ## Things to avoid
 
@@ -444,7 +447,7 @@ Confirm AI search/retrieval bots are not blocked, in `robots.txt` (Yoast generat
 
 ## Launch
 
-Production settings that must be in place before a site goes live — Yoast site representation, author archives, page types, llms.txt, AI bots, the Firm fields — are the checklist in `docs/launch.md`.
+Production settings that must be in place before a site goes live — Yoast site representation, author archives, page types, llms.txt, AI bots, the Firm fields, the deploy ignore files — are the checklist in `docs/launch.md`.
 
 ## Doc integrity
 
@@ -466,7 +469,8 @@ When building a new site on Tatami:
 7. Extract reusable sections into `views/modules/` and `views/partials/`
 8. Add JS interactivity in `src/js/main.js` using the module pattern
 9. Add reusable queries to `Tatami\Queries` (`lib/Queries.lib.php`), then call them from the appropriate router file and assign to context
-10. Before launch, work through `docs/launch.md`
+10. Copy `recipes/wpe/wpe-ignore` into `app/public/` as both `.wpe-push-ignore` and `.wpe-pull-ignore`, so the theme's dev files never reach WP Engine (see `docs/deploy.md`). The theme folder stays `tatami`; the recipe's paths name it.
+11. Before launch, work through `docs/launch.md`
 
 ## Agent skills
 

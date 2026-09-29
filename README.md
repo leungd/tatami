@@ -21,10 +21,10 @@ A WordPress base theme for professional-services sites, built on Timber/Twig, Ta
 
 ```bash
 pnpm dev        # Vite dev server with HMR
-pnpm build      # Production build → build/ (never committed; built at deploy)
+pnpm build      # Production build → build/ (never committed; built before each push)
 pnpm preview    # Preview the production build
 pnpm lint       # ESLint + the Twig hero guardrail
-pnpm test       # Node tests (linter, ACF recipes) + PHP tests of the pure helpers
+pnpm test       # Node tests (linter, recipes) + PHP tests of the pure helpers
 pnpm format     # Prettier for JS, CSS and Twig
 ```
 

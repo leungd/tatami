@@ -33,3 +33,62 @@ for (const file of files) {
     }
   });
 }
+
+const themeDir = new URL('../', import.meta.url).pathname;
+const themePrefix = 'wp-content/themes/tatami/';
+const shipped = [
+  'build/',
+  'vendor/',
+  'lib/',
+  'views/',
+  'acf-json/',
+  '*.php',
+  'style.css',
+  'screenshot.png',
+  'LICENSE',
+];
+
+// rsync semantics for top-level entries: a trailing / matches directories only, * never crosses /.
+const matches = (rule, name, isDir) => {
+  if (rule.endsWith('/') && !isDir) return false;
+  const glob = rule.replace(/\/$/, '');
+  const pattern = glob
+    .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*/g, '[^/]*');
+  return new RegExp(`^${pattern}$`).test(name);
+};
+
+const wpeRules = readFileSync(join(themeDir, 'recipes/wpe/wpe-ignore'), 'utf8')
+  .split('\n')
+  .map((line) => line.trim())
+  .filter((line) => line && !line.startsWith('#'))
+  .map((line) =>
+    line.startsWith(themePrefix) ? line.slice(themePrefix.length) : line,
+  )
+  .filter((rule) => !rule.replace(/\/$/, '').includes('/'));
+
+const excluded = (name, isDir) =>
+  wpeRules.some((rule) => matches(rule, name, isDir));
+
+test('wpe-ignore keeps the runtime directories that may be absent from a checkout', () => {
+  for (const dir of ['build', 'vendor', 'acf-json']) {
+    assert.ok(!excluded(dir, true), `${dir}/ must ship`);
+  }
+});
+
+test('every top-level theme entry either ships or is excluded by wpe-ignore, never both', () => {
+  for (const entry of readdirSync(themeDir, { withFileTypes: true })) {
+    const isDir = entry.isDirectory();
+    const label = `${entry.name}${isDir ? '/' : ''}`;
+    const ships = shipped.some((rule) => matches(rule, entry.name, isDir));
+    const skipped = excluded(entry.name, isDir);
+    assert.ok(
+      ships || skipped,
+      `${label} is neither shipped nor in recipes/wpe/wpe-ignore`,
+    );
+    assert.ok(
+      !(ships && skipped),
+      `${label} must ship but recipes/wpe/wpe-ignore excludes it`,
+    );
+  }
+});
