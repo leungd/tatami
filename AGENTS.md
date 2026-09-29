@@ -429,6 +429,7 @@ pnpm format           # Prettier (JS, CSS, Twig)
 - **No hand-rolled page headers** — a `single-*`/`page-*` template must not contain its own `<header>`; override `{% block hero %}` and reuse `partials/hero.twig`, or skip it per `docs/hero.md` (enforced by `pnpm lint`)
 - **No ACF field groups authored in the admin editor** — `acf-json/` is the sole author; house-tool groups start from `recipes/acf/`
 - **No ACF repeater for social links** — they come from Yoast → Site representation
+- **No media files bundled in the theme** — photos, video and posters come from ACF media fields (IDs); bespoke SVG artwork is a `views/svg/` partial
 
 ## Definition of done (template work)
 
