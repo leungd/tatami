@@ -29,8 +29,12 @@ A person at the Firm who has their own profile page — a lawyer, advisor, accou
 _Avoid_: Lawyer, team member, staff, person (each is either firm-specific or too broad)
 
 **Attribution**:
-The credit a blog post publicly carries: the Firm itself, "Written by" a named person, or "Reviewed by" a named person. The typed name is the credit; a Professional's profile only adds a link, so a post keeps its credit when the profile is unpublished. It deliberately ignores the WordPress user who entered the post.
+The credit a blog post publicly carries: the Firm itself, "Written by" a named person, or "Reviewed by" a named person. The typed name is the credit; a Professional's profile only adds a link, so a post keeps its credit when the profile is unpublished. It deliberately ignores the WordPress user who entered the post. Wherever a single author is named, a "Reviewed by" post's author is the Firm; the reviewer is credited as reviewer, never as author.
 _Avoid_: Author, byline (both suggest the WordPress user account)
+
+**WordPress user**:
+An account that logs into the site. It is never public: never credited on a post, and never listed or named anywhere a visitor can reach. Public credit is the Attribution's job.
+_Avoid_: Author (in the house sense, an author is who the Attribution names)
 
 **Office**:
 A physical location of the Firm, with its own address and phone. A Firm has one main Office and may have more.

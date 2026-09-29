@@ -1,6 +1,6 @@
 # Attribution (house tool)
 
-A blog post's **Attribution** is the credit it publicly carries: the Firm itself, "Written by" a named person, or "Reviewed by" a named person — usually a Professional, never the WordPress user who entered the post. Every public credit surface (the visible byline, Yoast's author meta, the share card, the schema graph) derives from one resolver, `Tatami\Attribution` (`lib/Attribution.lib.php`).
+A blog post's **Attribution** is the credit it publicly carries: the Firm itself, "Written by" a named person, or "Reviewed by" a named person — usually a Professional, never the WordPress user who entered the post. Every public credit surface (the visible byline, Yoast's author meta, the share card, the feed, oEmbed, the schema graph) derives from one resolver, `Tatami\Attribution` (`lib/Attribution.lib.php`).
 
 ## States
 
@@ -32,7 +32,15 @@ A blog post's **Attribution** is the credit it publicly carries: the Firm itself
 
 ## Yoast
 
-`<meta name="author">` and the share card's "Written by" row (`twitter:label1`/`twitter:data1`) carry the resolved label and name. The WordPress Author box is hidden in the admin and removed from the REST API (where the block editor reads it) so there is no second, wrong place to assign credit; post author support stays on the front end because Yoast skips Article schema for a post type without it.
+The share card's "Written by" row (`twitter:label1`/`twitter:data1`) carries the resolved label and name. `<meta name="author">` carries the author (below). The WordPress Author box is hidden in the admin and removed from the REST API (where the block editor reads it) so there is no second, wrong place to assign credit; post author support stays on the front end because Yoast skips Article schema for a post type without it.
+
+## Author
+
+A surface with one "author" slot names whoever `Tatami\Attribution::author( $attribution, $firm_name, $firm_url )` returns: the credited person for `written_by` (with the profile url, if any), otherwise the Firm (site title, home url). A reviewer is credited as reviewer, never as author, which matches the schema below. Surfaces:
+
+- `<meta name="author">`.
+- The feed: `<dc:creator>` (RSS2, RDF) and Atom's `<author><name>`, through `the_author` in feed context; Atom's `<uri>` is the author url, omitted for a name-only credit.
+- oEmbed: `author_name`, and `author_url` when there is one. It never points at an author archive. Post types without Attribution fields resolve to the Firm.
 
 ## Schema
 

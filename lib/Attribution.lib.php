@@ -6,13 +6,16 @@
  * named person. The Credited Name is stored as text on the post so it
  * survives the Professional's profile being unpublished; the Professional
  * only adds a profile link while published. Every public credit surface —
- * the template byline, Yoast's author meta, the share-card row, and the
- * schema graph (through Tatami\Schema) — derives from resolve(), never from
- * the WordPress user who entered the post. Fields (per site): see
- * "Attribution (house tool)" in AGENTS.md.
+ * the template byline, Yoast's author meta, the share-card row, the feed,
+ * oEmbed, and the schema graph (through Tatami\Schema) — derives from
+ * resolve(), never from the WordPress user who entered the post. Fields
+ * (per site): see "Attribution (house tool)" in AGENTS.md.
  *
  *   $context['attribution'] = Tatami\Attribution::resolve( $post->ID );
  *   // [ 'state' => 'written_by', 'label' => 'Written by', 'name' => 'Jane Doe', 'url' => 'https://…/jane-doe/' ]
+ *
+ *   Tatami\Attribution::author( $attribution, 'Acme LLP', 'https://acme.test/' );
+ *   // [ 'name' => 'Jane Doe', 'url' => 'https://…/jane-doe/' ] — the Firm for firm and reviewed_by
  *
  * @package  WordPress
  * @subpackage  Tatami
@@ -29,6 +32,10 @@ class Attribution {
 
         add_filter( 'wpseo_meta_author', [ $this, 'filter_meta_author' ], 10, 2 );
         add_filter( 'wpseo_enhanced_slack_data', [ $this, 'filter_slack_data' ], 10, 2 );
+
+        add_filter( 'the_author', [ $this, 'filter_feed_author_name' ] );
+        add_filter( 'get_the_author_user_url', [ $this, 'filter_feed_author_url' ] );
+        add_filter( 'oembed_response_data', [ $this, 'filter_oembed_author' ], 10, 2 );
     }
 
     /**
@@ -74,6 +81,27 @@ class Attribution {
             'name'  => $name,
             'url'   => $published ? trailingslashit( get_permalink( $professional_id ) ) : null,
         ];
+    }
+
+    /**
+     * Who fills a single "author" slot. A reviewer is credited as reviewer,
+     * never as author, so reviewed_by names the Firm, as the schema does.
+     *
+     * @return array{name:string,url:?string}
+     */
+    public static function author( array $attribution, string $firm_name, string $firm_url ): array {
+        if ( 'written_by' === $attribution['state'] ) {
+            return [ 'name' => $attribution['name'], 'url' => $attribution['url'] ];
+        }
+        return [ 'name' => $firm_name, 'url' => $firm_url ];
+    }
+
+    private static function author_of( int $post_id ): array {
+        return self::author(
+            self::resolve( $post_id ),
+            html_entity_decode( get_bloginfo( 'name' ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ),
+            home_url( '/' )
+        );
     }
 
     private static function is_published_professional( int $professional_id ): bool {
@@ -125,7 +153,7 @@ class Attribution {
     // <meta name="author">
     public function filter_meta_author( $author_name, $presentation ) {
         $post_id = $this->presented_post_id( $presentation );
-        return $post_id ? self::resolve( $post_id )['name'] : $author_name;
+        return $post_id ? self::author_of( $post_id )['name'] : $author_name;
     }
 
     // twitter:label1 / twitter:data1 — Yoast's "Written by" share-card row.
@@ -137,5 +165,29 @@ class Attribution {
         $attribution = self::resolve( $post_id );
         unset( $data[ __( 'Written by', 'wordpress-seo' ) ], $data['Written by'] );
         return array_merge( [ $attribution['label'] => $attribution['name'] ], $data );
+    }
+
+    // RSS2/RDF <dc:creator> and Atom <author><name>.
+    public function filter_feed_author_name( $name ) {
+        $post = get_post();
+        return is_feed() && $post ? self::author_of( $post->ID )['name'] : $name;
+    }
+
+    // Atom <author><uri>, printed only when non-empty.
+    public function filter_feed_author_url( $url ) {
+        $post = get_post();
+        return is_feed() && $post ? (string) self::author_of( $post->ID )['url'] : $url;
+    }
+
+    // Default oEmbed data points author_url at the author archive.
+    public function filter_oembed_author( $data, $post ) {
+        $author              = self::author_of( $post->ID );
+        $data['author_name'] = $author['name'];
+        if ( $author['url'] ) {
+            $data['author_url'] = $author['url'];
+        } else {
+            unset( $data['author_url'] );
+        }
+        return $data;
     }
 }

@@ -32,6 +32,10 @@ class Site extends TimberSite {
         // XML-RPC pingbacks are a spam/DDoS vector no client site uses.
         add_filter( 'xmlrpc_methods', array( $this, 'disable_xmlrpc_pingbacks' ) );
 
+        // The WordPress user is never public: no user list for visitors.
+        add_filter( 'rest_endpoints', array( $this, 'hide_users_endpoints' ) );
+        add_filter( 'wp_sitemaps_add_provider', array( $this, 'remove_users_sitemap' ), 10, 2 );
+
         // WP's the_title chain entity-encodes output (convert_chars encodes
         // ampersands; wptexturize emits numeric references for quotes/dashes);
         // Twig autoescape then escapes again. Decoding lets titles escape
@@ -95,6 +99,23 @@ class Site extends TimberSite {
         $wp_query->set_404();
         status_header( 404 );
         nocache_headers();
+    }
+
+    /**
+     * Gated on edit_posts, not list_users: editors lack list_users, and the
+     * block editor looks users up as them.
+     */
+    public function hide_users_endpoints( $endpoints ) {
+        if ( current_user_can( 'edit_posts' ) ) {
+            return $endpoints;
+        }
+        unset( $endpoints['/wp/v2/users'], $endpoints['/wp/v2/users/(?P<id>[\\d]+)'] );
+        return $endpoints;
+    }
+
+    // Core's sitemap (live only without Yoast) lists author archives by login slug.
+    public function remove_users_sitemap( $provider, $name ) {
+        return 'users' === $name ? false : $provider;
     }
 
     public function disable_xmlrpc_pingbacks( $methods ) {
