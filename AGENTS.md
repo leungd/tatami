@@ -109,7 +109,7 @@ Comment only to record something the code cannot state for itself — a non-obvi
 1. Create `page-{slug}.twig` in `views/` — `page.php` auto-resolves it by slug
 2. If the page needs custom context (queries, ACF fields), add logic in `page.php` with a slug check
 3. Extend `page.twig` — the Page shell — and override only what differs, usually the `content` block. The one exception: a page that skips the hero extends `base.twig` directly (see `docs/hero.md`)
-4. `page.twig` embeds the hero, so a page-specific template cannot reach `heroBody` or the other embed blocks without overriding `hero` wholesale and duplicating the shell. The shell exposes what a page-specific template may change (a Listing page promoting its title to `<h1>`, a header overlay) as top-level `{% set %}`s written `|default(...)` — in Twig the parent's `set` runs after the child's and overwrites it, so a plain `set` in `page.twig` cannot be overridden
+4. `page.twig` embeds the hero, so a page-specific template cannot reach `heroBody` or the other embed blocks without overriding `hero` wholesale and duplicating the shell. The shell exposes what a page-specific template may change as top-level `{% set %}`s written `|default(...)` — in Twig the parent's `set` runs after the child's and overwrites it, so a plain `set` in `page.twig` cannot be overridden. The base ships one: `hero_title_tag`, `'p'` by default; a Listing page template sets it to `'h1'`. A site adds its own the same way (e.g. a header overlay)
 
 ### Front page & posts page (house routing pattern)
 

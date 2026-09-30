@@ -1,5 +1,26 @@
 {% extends 'base.twig' %}
 
+{# The hero title is a <p> label: a Content page's <h1> comes from the body
+   (docs/hero.md). A Listing page template sets hero_title_tag to 'h1'. #}
+{% set hero_title_tag = hero_title_tag|default('p') %}
+
+{% block hero %}
+  {% embed 'partials/hero.twig'
+    with {
+      title,
+      hero_title_tag
+    }
+  %}
+    {% block heroBody %}
+      {% if hero_title_tag == 'h1' %}
+        <h1>{{ title }}</h1>
+      {% else %}
+        {{ parent() }}
+      {% endif %}
+    {% endblock %}
+  {% endembed %}
+{% endblock %}
+
 {% block content %}
   <div class="fluid-grid">
     <div class="col-[content-start/content-end]">
