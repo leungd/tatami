@@ -31,7 +31,7 @@ The partial is a frame, not a look: a `<header class="fluid-grid">` with slots. 
 
 A page whose top section genuinely doesn't fit the frame may skip it. Try the frame first; skipping is the exception. The template:
 
-- empties `{% block hero %}` and builds the section in `{% block content %}` as a `<div class="fluid-grid">`, never a `<header>`;
+- empties `{% block hero %}` — a page template extends `base.twig` directly rather than `page.twig`, since the hero is what the Page shell is for — and builds the section in `{% block content %}` as a `<div class="fluid-grid">`, never a `<header>`;
 - still carries exactly one `<h1>`;
 - keeps a one-line `{# … #}` note saying the section sits outside the hero by design, so nobody moves it back into the partial.
 
@@ -45,13 +45,13 @@ Routers for singular views assign `$context['featured_image'] = Tatami\Queries::
 
 ## One `<h1>` per page
 
-**Exactly one `<h1>` per page, on the semantically-primary heading.** The hero title is a label (`<p>`) whenever the `<h1>` lives elsewhere; it is promoted to the `<h1>` only when the title is itself the whole heading (e.g. a person's name, or a utility/listing page). Each page's single `<h1>` is the derivative's responsibility. Two clarifications:
+**Exactly one `<h1>` per page, on the semantically-primary heading.** The hero title is a label (`<p>`) whenever the `<h1>` lives elsewhere; it is promoted to the `<h1>` only when the title is itself the whole heading (e.g. a person's name, or a Listing page). Each page's single `<h1>` is the derivative's responsibility. Two clarifications:
 
 - The `<h1>` may come from the WYSIWYG body (`post.content`) **or a dedicated ACF heading field**. Structured CPT singles have no WYSIWYG `<h1>` — they render an ACF field (an intro statement, a keyword line) as the body `<h1>` and keep the hero title as the `<p>` label.
 - **Heading level is semantic, not visual.** A `<p class="text-6xl">` name above an `<h1 class="text-5xl">` keyword line is correct markup. Do not equate "biggest text" with "the `<h1>`."
 
 Why it matters: SEO is core business for this shop — the content team writes one keyword-rich `<h1>` per page ("Dynamic advocate and advisor in high-profile public interest and public law matters"), distinct from the short page title. Promoting the short title to `<h1>` starves the keyword heading.
 
-On content-less listing/utility pages (`archive`, `search`, `404`, the blog `index`) the router-set `title` *is* the whole heading — those base templates override `heroBody` to render `<h1>{{ title }}</h1>` (a working reference for the promotion case). Content pages keep the `<p>` label and get their `<h1>` from the body.
+On Listing pages (`archive`, `search`, `404`, the blog `index`) the router-set `title` *is* the whole heading — those base templates override `heroBody` to render `<h1>{{ title }}</h1>` (a working reference for the promotion case). Content pages keep the `<p>` label and get their `<h1>` from the body.
 
-`pnpm lint` enforces a **floor only**: it fails any page template that hand-rolls a `<header>`, including a per-section `<article><header>` — a section's heading group in a page template is a `<div>`, and page-level meta belongs in `heroBody`. Modules never extend `base.twig`, so they are outside the guard, but that is not a reason to extract a single-use section (see "Add a reusable module" in AGENTS.md). The guardrail is blind to `<h1>` placement — a template that inverts the heading rule still passes lint; that check happens in review (see "Definition of done" in AGENTS.md).
+`pnpm lint` enforces a **floor only**: it fails any page template that hand-rolls a `<header>`, including a per-section `<article><header>` — a section's heading group in a page template is a `<div>`, and page-level meta belongs in `heroBody`. Modules never extend a template, so they are outside the guard, but that is not a reason to extract a single-use section (see "Add a reusable module" in AGENTS.md). The guardrail is blind to `<h1>` placement — a template that inverts the heading rule still passes lint; that check happens in review (see "Definition of done" in AGENTS.md).

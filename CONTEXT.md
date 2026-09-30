@@ -71,3 +71,11 @@ _Avoid_: Custom code, overrides
 **Host**:
 A page that subscribes to categories and so is allowed to show Related Posts. Any post type can be a Host.
 _Avoid_: Parent, container
+
+**Content page**:
+A page whose main heading is written by the content team in its body, as a keyword line distinct from the short page title. The title shows only as a label.
+_Avoid_: Generic page, standard page
+
+**Listing page**:
+A page whose title is the whole heading, because what follows is a list the site generates (the Firm's Professionals, the blog, an archive) rather than written copy.
+_Avoid_: Index page, utility page

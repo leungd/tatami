@@ -29,12 +29,25 @@ test('passes a page template that overrides hero via embed', () => {
   assert.equal(checkTemplate('views/single-service.twig', content), null);
 });
 
-test('ignores <header> in files that do not extend base (site chrome, hero partial)', () => {
+test('flags a hand-rolled <header> in a template that extends page.twig', () => {
+  const content = [
+    "{% extends 'page.twig' %}",
+    '{% block hero %}',
+    '  <header class="fluid-grid"><h1>{{ title }}</h1></header>',
+    '{% endblock %}',
+  ].join('\n');
+  assert.deepEqual(checkTemplate('views/page-our-team.twig', content), {
+    file: 'views/page-our-team.twig',
+    line: 3,
+  });
+});
+
+test('ignores <header> in files that do not extend a template (site chrome, hero partial)', () => {
   const content = '<header>\n  <nav>…</nav>\n</header>';
   assert.equal(checkTemplate('views/header.twig', content), null);
 });
 
-test('ignores <header> in a module (modules never extend base)', () => {
+test('ignores <header> in a module (modules never extend a template)', () => {
   const content = '<article>\n  <header>Card title</header>\n</article>';
   assert.equal(checkTemplate('views/modules/service-card.twig', content), null);
 });

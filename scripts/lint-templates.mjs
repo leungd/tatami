@@ -4,16 +4,17 @@ import { fileURLToPath } from 'node:url';
 
 const VIEWS_DIR = 'views';
 
-// A page template extends base.twig. The hero shell (`<header class="fluid-grid">`)
-// belongs only in partials/hero.twig, consumed via {% block hero %} in base.twig.
-// A page template that writes its own <header> is reproducing the hero — the
-// anti-pattern this guard exists to stop. The extends filter is self-limiting:
-// the site chrome (header.twig) and the hero partial are included/embedded, never
-// extended, so they are never targeted — no allowlist needed.
+// A page template extends base.twig, directly or through a shell such as
+// page.twig. The hero shell (`<header class="fluid-grid">`) belongs only in
+// partials/hero.twig, consumed via {% block hero %} in base.twig. A page template
+// that writes its own <header> is reproducing the hero — the anti-pattern this
+// guard exists to stop. The extends filter is self-limiting: the site chrome
+// (header.twig), the hero partial and modules are included or embedded and
+// extend nothing, so they are never targeted — no allowlist needed.
 export function checkTemplate(relPath, content) {
   // Tolerant of quote style and Twig whitespace-control, because the guard's
   // real audience is derivative sites where that authoring drift appears.
-  if (!/\{%-?\s*extends\s+['"]base\.twig['"]/.test(content)) return null;
+  if (!/\{%-?\s*extends\s/.test(content)) return null;
   const lines = content.split('\n');
   for (let i = 0; i < lines.length; i++) {
     if (lines[i].includes('<header')) {

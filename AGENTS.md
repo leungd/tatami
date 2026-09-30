@@ -50,7 +50,7 @@ lib/Schema.lib.php     → Tatami\Schema — extends Yoast's schema graph (pure 
 lib/Attribution.lib.php → Tatami\Attribution — a blog post's public credit (Firm / Written by / Reviewed by); base plumbing
 lib/SocialProfiles.lib.php → Tatami\SocialProfiles — the Firm's social profiles from Yoast Site representation (pure); base plumbing
 views/                 → All Twig templates
-  base.twig            → Root HTML shell — all page templates extend this
+  base.twig            → Root HTML shell — all page templates extend this, directly or through page.twig
   partials/            → Reusable fragments (head, hero, pagination, post-list)
   macros/              → Twig macros for repeated patterns (images, addresses)
   modules/             → Sections rendered by more than one template (related posts, services grid, testimonials)
@@ -67,7 +67,7 @@ CONTEXT.md             → Glossary of house terms
 
 1. WordPress routes request → PHP template file (e.g., `page.php`)
 2. PHP file builds Timber context, calls `Timber::render('page.twig', $context)`
-3. Twig template extends `base.twig`, overrides blocks with page-specific content
+3. Twig template extends `base.twig` (directly or through `page.twig`), overrides blocks with page-specific content
 4. Global context (menu, site, ACF options, social profiles) injected via `add_to_context()` in `Site.lib.php`
 
 ## File conventions
@@ -108,14 +108,15 @@ Comment only to record something the code cannot state for itself — a non-obvi
 ### Add a page template
 1. Create `page-{slug}.twig` in `views/` — `page.php` auto-resolves it by slug
 2. If the page needs custom context (queries, ACF fields), add logic in `page.php` with a slug check
-3. Extend `base.twig` and override the `content` block
+3. Extend `page.twig` — the Page shell — and override only what differs, usually the `content` block. The one exception: a page that skips the hero extends `base.twig` directly (see `docs/hero.md`)
+4. `page.twig` embeds the hero, so a page-specific template cannot reach `heroBody` or the other embed blocks without overriding `hero` wholesale and duplicating the shell. The shell exposes what a page-specific template may change (a Listing page promoting its title to `<h1>`, a header overlay) as top-level `{% set %}`s written `|default(...)` — in Twig the parent's `set` runs after the child's and overwrites it, so a plain `set` in `page.twig` cannot be overridden
 
 ### Front page & posts page (house routing pattern)
 
 The standard setup is a static "Home" page + a "Blog" posts page assigned under Settings → Reading.
 
 - The front page renders through `front-page.php` → `front-page.twig` (WP hierarchy name).
-- **The posts page never routes through `page.php`** — WordPress serves it via `home.php`. `home.php` participates in the page-template convention: it resolves `page-{slug}.twig` from the assigned Blog page's slug (so a site calling it "News" gets `page-news.twig`), sets `post` to the Blog page (its title/ACF fields drive the header), and falls back to `home.twig` → `index.twig`.
+- **The posts page never routes through `page.php`** — WordPress serves it via `home.php`. `home.php` participates in the page-template convention: it resolves `page-{slug}.twig` from the assigned Blog page's slug (so a site calling it "News" gets `page-news.twig`), sets `post` to the Blog page (its title/ACF fields drive the header), and falls back to `home.twig` → `index.twig`. Its `page-{slug}.twig` extends `page.twig` like any other page template.
 - Naming rule: the front page uses `front-page.twig`; **every other admin-created page — including the posts page — uses `page-{slug}.twig`**.
 
 ### Hero (house tool)
@@ -329,7 +330,7 @@ templating can't solve:
 
 ## Twig rules
 
-- All templates extend `base.twig` (except partials, macros, and modules)
+- All templates extend `base.twig`, directly or through `page.twig` (except partials, macros, and modules)
 - Use blocks for overridable sections: `{% block content %}{% endblock %}`
 - Use `{% include %}` for partials and modules, `{% from %}` for macros, and
   `{% embed %}` for fragments that wrap caller-supplied markup (cards with slots, callouts)
