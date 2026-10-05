@@ -3,21 +3,6 @@
   "title": "Site Settings",
   "fields": [
     {
-      "key": "field_SITE_ss_firm_type",
-      "label": "Firm Type",
-      "name": "firm_type",
-      "type": "select",
-      "instructions": "Tells search engines what kind of firm this is.",
-      "choices": {
-        "legal": "Law firm (LegalService)",
-        "accounting": "Accounting firm (AccountingService)",
-        "financial": "Financial firm (FinancialService)",
-        "professional": "Other professional firm (ProfessionalService)"
-      },
-      "default_value": "professional",
-      "return_format": "value"
-    },
-    {
       "key": "field_SITE_ss_address",
       "label": "Address",
       "name": "address",

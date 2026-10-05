@@ -8,7 +8,8 @@ Set these on production before launch; each says where it lives.
 - [ ] **Professional page type = Profile page** (Yoast SEO → Settings → Content types → the Professional post type → Schema → Page type).
 - [ ] **llms.txt enabled** (Yoast SEO → Settings → Site features → llms.txt) and regenerated on production once content is final. Never ship a locally generated file.
 - [ ] **Search/retrieval AI bots allowed**: `robots.txt` has no `Disallow` for them, and the host/CDN does not block them (Cloudflare → Security → Bots → "Block AI bots" off, or an allow rule for the retrieval agents). Training bots (GPTBot, ClaudeBot, Google-Extended, CCBot, …) are allowed by default unless the client decides otherwise — record the client's decision.
-- [ ] **Firm fields filled** (Site Settings): Firm type; the main Office address exactly as the Google Business Profile shows it; phone, fax, email; Offices only if there is more than one; Area served (see `docs/schema.md`).
+- [ ] **Firm type set** in `Site.lib.php` with the `tatami/schema/firm_type` filter (see `docs/schema.md`).
+- [ ] **Firm fields filled** (Site Settings): the main Office address exactly as the Google Business Profile shows it; phone, fax, email; Offices only if there is more than one; Area served (see `docs/schema.md`).
 - [ ] **Schema checks run** — the Definition-of-done schema checks in AGENTS.md, on the pages listed there.
 - [ ] **Theme dev files kept off WP Engine**: `recipes/wpe/wpe-ignore` is in `app/public/` as both `.wpe-push-ignore` and `.wpe-pull-ignore`, identical, and `/wp-content/themes/tatami/AGENTS.md` returns 404 on production with a cache-busting query (see `docs/deploy.md`).
 - [ ] **Assets built before the push**: `pnpm build` ran; WP Engine never builds.

@@ -59,6 +59,11 @@
  *
  *   add_filter( 'tatami/schema/post_types', fn( $types ) => [ 'professional' => 'lawyer', 'service' => 'practice-area' ] + $types );
  *
+ * The Firm type is set by the site, not an editor (filter
+ * `tatami/schema/firm_type`; unset → ProfessionalService):
+ *
+ *   add_filter( 'tatami/schema/firm_type', fn() => 'legal' );
+ *
  * @package  WordPress
  * @subpackage  Tatami
  */
@@ -167,7 +172,7 @@ class Schema {
 
     private function firm_facts(): array {
         return array_filter( [
-            'type'          => get_field( 'firm_type', 'option' ),
+            'type'          => apply_filters( 'tatami/schema/firm_type', '' ),
             'address'       => array_filter( (array) get_field( 'address', 'option' ) ),
             'phone_number'  => get_field( 'phone_number', 'option' ),
             'fax_number'    => get_field( 'fax_number', 'option' ),

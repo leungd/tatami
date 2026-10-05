@@ -4,7 +4,12 @@ Yoast SEO owns SEO output (house ADR): titles, meta descriptions, canonical, Ope
 
 - **Facts come from house-named ACF fields.** The field names below are fixed because `Tatami\Schema` reads them; keys stay site-prefixed.
 - **No-ops cleanly.** Without Yoast the filter is never registered; without ACF the only change is a post's Attribution, which falls back to the Firm. Empty fields leave Yoast's graph unchanged, and a graph with no `#organization` piece (a site represented as a Person in Yoast) is returned as-is.
-- **Firm → Organization.** With the Firm fields filled, Yoast's Organization piece gains the Firm-type subtype on its `@type` (`legal` → `LegalService`, `accounting` → `AccountingService`, `financial` → `FinancialService`, anything else → `ProfessionalService`), a structured `PostalAddress`, `telephone`, `faxNumber`, and `email`.
+- **Firm → Organization.** With the Firm fields filled, Yoast's Organization piece gains the Firm-type subtype on its `@type` (`legal` → `LegalService`, `accounting` → `AccountingService`, `financial` → `FinancialService`, anything else or unset → `ProfessionalService`), a structured `PostalAddress`, `telephone`, `faxNumber`, and `email`.
+- **Firm type is set in code, not by editors.** It never changes over a site's life, and a dropdown would show a law firm's editors the other kinds of firm. The site sets it with one line in `Site.lib.php`; unset, the Firm is a `ProfessionalService`:
+
+  ```php
+  add_filter( 'tatami/schema/firm_type', fn() => 'legal' ); // legal | accounting | financial | professional
+  ```
 - **Offices.** The Address above is the main office. Each additional Office (`offices` repeater — empty on a single-office site) becomes its own piece with the Firm's `@type`, a stable `@id` (`<home>/#/schema/office/<slug of name>`, or the 1-based row number when unnamed — renaming an Office changes its `@id`), `name`, a structured `address`, `telephone`, `faxNumber`, `email`, and `parentOrganization` → the Firm. The Organization lists them in row order as `department`. Office pieces are appended after Yoast's, leaving Yoast's order intact.
 - **Area served.** `area_served` rows become the Organization's `areaServed`, a plain list of place names in row order. One list for the whole Firm — every Service inherits it; empty adds nothing.
 - **Post types.** The base assumes the post type names `professional` and `service` (the URL rewrite slug is independent — e.g. `'rewrite' => [ 'slug' => 'lawyers' ]`). New sites register the CPTs under these house names. A site with legacy names maps them with one line in `Site.lib.php`, and everything in the base that needs either name reads it from `Tatami\Schema::post_types()`:
@@ -22,7 +27,7 @@ Yoast SEO owns SEO output (house ADR): titles, meta descriptions, canonical, Ope
 
 ## Firm fields (per site)
 
-Recipe: `recipes/acf/group_SITE_site_settings.json` — the site's Site Settings group (see "Options page" in `docs/acf-fields.md`). Copy it into `acf-json/` and replace `SITE` with the site prefix. It carries `firm_type`, the `address` group (street, city, province, postal code, country), `phone_number`, `fax_number`, `email_address`, the `offices` repeater (additional offices only), and the `area_served` repeater. The instructions on each field tell editors to enter the address exactly as the Google Business Profile shows it.
+Recipe: `recipes/acf/group_SITE_site_settings.json` — the site's Site Settings group (see "Options page" in `docs/acf-fields.md`). Copy it into `acf-json/` and replace `SITE` with the site prefix. It carries the `address` group (street, city, province, postal code, country), `phone_number`, `fax_number`, `email_address`, the `offices` repeater (additional offices only), and the `area_served` repeater. The instructions on each field tell editors to enter the address exactly as the Google Business Profile shows it.
 
 ## Professional fields (per site)
 
