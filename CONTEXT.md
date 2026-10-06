@@ -73,9 +73,9 @@ A page that subscribes to categories and so is allowed to show Related Posts. An
 _Avoid_: Parent, container
 
 **Content page**:
-A page whose main heading is written by the content team in its body, as a keyword line distinct from the short page title. The title shows only as a label.
+A page whose main heading is written by the content team in its body, as a keyword line distinct from the short page title. The title shows only as a label. The theme recognises one by the `<h1>` in its body.
 _Avoid_: Generic page, standard page
 
 **Listing page**:
-A page whose title is the whole heading, because what follows is a list the site generates (the Firm's Professionals, the blog, an archive) rather than written copy.
+A page whose title is the whole heading, because what follows is a list the site generates (the Firm's Professionals, the blog, an archive) rather than written copy. An admin-created page with no `<h1>` in its body is treated as one.
 _Avoid_: Index page, utility page

@@ -19,6 +19,8 @@ if ( $blog_page ) {
     array_unshift( $templates, 'page-' . $blog_page->post_name . '.twig' );
     // The Blog page itself — its title/ACF fields drive the header.
     $context['post'] = $blog_page;
+    // Promote the title unless the Blog page's body carries its own <h1>.
+    $context['hero_title_tag'] = str_contains( $blog_page->post_content, '<h1' ) ? 'p' : 'h1';
 }
 $context['title'] = $blog_page ? $blog_page->title() : __( 'Blog', 'tatami' );
 

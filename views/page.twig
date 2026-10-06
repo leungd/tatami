@@ -1,7 +1,8 @@
 {% extends 'base.twig' %}
 
-{# The hero title is a <p> label: a Content page's <h1> comes from the body
-   (docs/hero.md). A Listing page template sets hero_title_tag to 'h1'. #}
+{# The router sets hero_title_tag: 'h1' unless the body carries its own <h1>
+   (docs/hero.md). A page template whose <h1> lives outside the body sets it
+   to 'p'. #}
 {% set hero_title_tag = hero_title_tag|default('p') %}
 
 {% block hero %}
