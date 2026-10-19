@@ -15,7 +15,7 @@ This file is the always-loaded core: identity, rules, and the invariants of each
 | Page headers, `<h1>` placement, `partials/hero.twig`, featured images | `docs/hero.md` |
 | Yoast's schema graph, `Tatami\Schema`, Firm/Office/Professional/Service facts, the address macro, social profiles | `docs/schema.md` |
 | A blog post's byline, `Tatami\Attribution`, author meta | `docs/attribution.md` |
-| The `faqs` field, FAQ markup, FAQPage schema | `docs/faqs.md` |
+| The FAQs blocks (`tatami/faqs`, `tatami/faq`), `Tatami\Faqs`, FAQ markup, FAQPage schema | `docs/faqs.md` |
 | Posts shown on a host page, `related_categories`, `Tatami\Queries::related_posts()` | `docs/related-posts.md` |
 | Any ACF field group, `acf-json/`, return formats, the options page | `docs/acf-fields.md` |
 | Preparing a site for production | `docs/launch.md` |
@@ -49,11 +49,14 @@ lib/Vite.lib.php       → Tatami\Vite — Vite ↔ WordPress bridge (dev server
 lib/Schema.lib.php     → Tatami\Schema — extends Yoast's schema graph (pure core + WordPress adapter); base plumbing
 lib/Attribution.lib.php → Tatami\Attribution — a blog post's public credit (Firm / Written by / Reviewed by); base plumbing
 lib/SocialProfiles.lib.php → Tatami\SocialProfiles — the Firm's social profiles from Yoast Site representation (pure); base plumbing
+lib/Faqs.lib.php       → Tatami\Faqs — the FAQs blocks: registration, render, schema facts, repeater migration; base plumbing
+blocks/                → block.json per theme block (faqs, faq) and the unbuilt editor script and editor styles
 views/                 → All Twig templates
   base.twig            → Root HTML shell — all page templates extend this, directly or through page.twig
   partials/            → Reusable fragments (head, hero, pagination, post-list)
   macros/              → Twig macros for repeated patterns (images, addresses)
   modules/             → Sections rendered by more than one template (related posts, services grid, testimonials)
+  blocks/              → Server-side render templates for the theme's blocks (faqs, faq)
 src/css/tailwind.css   → Tailwind config + custom utilities + component styles
 src/js/main.js         → JS entry point — imports CSS, initializes modules
 docs/                  → One reference doc per house tool and convention (see "Where the details live")
@@ -129,25 +132,25 @@ The posts a host page may show, chosen by the categories the host subscribes to 
 
 ### Schema (house tool)
 
-Yoast owns all SEO output and the page's single JSON-LD graph. **The theme never prints JSON-LD, microdata, or head meta**; `Tatami\Schema` adds the Firm, Offices, Professionals, Services, FAQs and Attribution to Yoast's graph through `wpseo_schema_graph`, from house-named ACF fields whose names are fixed. The house post type names are `professional` and `service`; a legacy name is mapped with the `tatami/schema/post_types` filter. The Firm's social profiles come from Yoast → Site representation via `{{ social_profiles }}` — never an ACF repeater. `macros/address.twig` renders the `address` group in Google Business Profile format. The pure core `Tatami\Schema::extend()` is the test seam. Facts, field recipes, address and social-profile markup: `docs/schema.md`.
+Yoast owns all SEO output and the page's single JSON-LD graph. **The theme never prints JSON-LD, microdata, or head meta**; `Tatami\Schema` adds the Firm, Offices, Professionals, Services, FAQs and Attribution to Yoast's graph through `wpseo_schema_graph`, from house-named ACF fields whose names are fixed and, for FAQs, the Question blocks. The house post type names are `professional` and `service`; a legacy name is mapped with the `tatami/schema/post_types` filter. The Firm's social profiles come from Yoast → Site representation via `{{ social_profiles }}` — never an ACF repeater. `macros/address.twig` renders the `address` group in Google Business Profile format. The pure core `Tatami\Schema::extend()` is the test seam. Facts, field recipes, address and social-profile markup: `docs/schema.md`.
 
 ### FAQs (house tool)
 
-The base fixes the field and the disclosure pattern, nothing visual. A `faqs` repeater (fixed name; `question` + WYSIWYG `answer`, both required) is what `Tatami\Schema` turns into FAQPage `mainEntity` in Yoast's graph, automatically, on any singular that has rows. On the page each row is a native `<details>`/`<summary>` — the answer in the HTML, no script — written into the template that carries FAQs; the base ships no FAQ template or module. Details and the markup pattern: `docs/faqs.md`.
+FAQs are the **FAQs block** (`tatami/faqs`), placed by the writer in the post content on any post type with the block editor, holding one **Question** block (`tatami/faq`) per question: an inline question plus an answer limited to Paragraph and List blocks. Never an ACF repeater, never Yoast's FAQ block (hidden from the inserter). `Tatami\Faqs` registers both and renders each question through `views/blocks/faq.twig` as a native `<details>`/`<summary>` — the answer in the HTML, no script, no base classes; a site styles it in that file and `views/blocks/faqs.twig`. `Tatami\Schema` turns the same Question blocks into FAQPage `mainEntity` in Yoast's graph, automatically, without ACF. The blocks show only where a template outputs `post.content`. Sites still on the old `faqs` repeater move with `wp tatami migrate-faqs`. Details: `docs/faqs.md`.
 
 ### Attribution (house tool)
 
 A post's public credit is the Firm, "Written by" a named person, or "Reviewed by" a named person — never the WordPress user. The typed name (`attribution_name`) is the credit and survives the Professional's profile being unpublished; the Professional only adds a link while published. `Tatami\Attribution::resolve()` is the one resolver behind the byline, Yoast's author meta, the share card, the feed, oEmbed and the graph; wherever one author is named, a "Reviewed by" post names the Firm; `single.php` exposes it as `attribution`. Field names `attribution_state`, `attribution_person`, `attribution_name` are fixed. Details: `docs/attribution.md`.
 
 ### Add a reusable module
-A module is a section that **more than one template renders**, or one driven by data any router could supply (a services grid, testimonials, Related Posts, FAQs). A section that exists on one page is not a module: it lives inline in that page template, however long the template gets. A module carries a contract (data in via context, no-op when absent) and a name in a shared namespace — giving that to single-use markup is an abstraction with one caller. Extract when the second consumer appears, not before. The tell: a module included by one template and fed only by that template's router is page markup in a costume; inline it. A site's `related-posts` module is reusable by design.
+A module is a section that **more than one template renders**, or one driven by data any router could supply (a services grid, testimonials, Related Posts). A section that exists on one page is not a module: it lives inline in that page template, however long the template gets. A module carries a contract (data in via context, no-op when absent) and a name in a shared namespace — giving that to single-use markup is an abstraction with one caller. Extract when the second consumer appears, not before. The tell: a module included by one template and fed only by that template's router is page markup in a costume; inline it. A site's `related-posts` module is reusable by design.
 
 1. Create `views/modules/{name}.twig`
 2. Include it from page templates: `{% include 'modules/{name}.twig' with { data: someData } %}`
 3. Keep modules self-contained — they receive data via context, never query directly
 4. Guard on the data so the module no-ops when it's absent (`{% if services %}…{% endif %}`). This lets the same module be dropped into any template; it only renders where the router supplied data.
 
-`{% block modules %}` in `base.twig` is the slot for **site bands**: sections the site repeats below the content on many pages (testimonials, recent posts, a call to action). A section that belongs to the page's own content — its body, its FAQs where a template has them — goes in `{% block content %}`, so a template that fills the bands slot never has to remember `{{ parent() }}` to keep them. A module always sits at the top level of a block, never inside a placed column: it carries its own `fluid-grid`, and a nested grid recomputes the named lines inside the narrower box.
+`{% block modules %}` in `base.twig` is the slot for **site bands**: sections the site repeats below the content on many pages (testimonials, recent posts, a call to action). A section that belongs to the page's own content — its body, with any FAQs block in it — goes in `{% block content %}`, so a template that fills the bands slot never has to remember `{{ parent() }}` to keep them. A module always sits at the top level of a block, never inside a placed column: it carries its own `fluid-grid`, and a nested grid recomputes the named lines inside the narrower box.
 
 A section's heading group inside a page template is a `<div>`, never a `<header>` — `<header>` is reserved for the hero, and `pnpm lint` fails a page template that contains one. Do not extract a section into a module just to get a `<header>` past lint.
 
@@ -239,7 +242,7 @@ Self-hosted fonts (the default):
 
 Hosted fonts that can't be self-hosted (Adobe Fonts / Typekit): register their own `wp_enqueue_style` in `Site.lib.php` — never by editing `Assets.lib.php`.
 
-The underlying distinction: `Vite.lib.php` + `Assets.lib.php` + `Schema.lib.php` + `Attribution.lib.php` + `SocialProfiles.lib.php` are **base plumbing** — keep them pristine so they diff clean against the base. `Site.lib.php` + `Queries.lib.php` are the **site surface** — extend them freely (CPTs, taxonomies, hooks, queries, and hosted-font enqueues all live here).
+The underlying distinction: `Vite.lib.php` + `Assets.lib.php` + `Schema.lib.php` + `Attribution.lib.php` + `SocialProfiles.lib.php` + `Faqs.lib.php` are **base plumbing** — keep them pristine so they diff clean against the base. `Site.lib.php` + `Queries.lib.php` are the **site surface** — extend them freely (CPTs, taxonomies, hooks, queries, and hosted-font enqueues all live here).
 
 ### Add brand colors
 Define in `src/css/tailwind.css` under `@theme`:
@@ -330,7 +333,7 @@ templating can't solve:
 
 ## Twig rules
 
-- All templates extend `base.twig`, directly or through `page.twig` (except partials, macros, and modules)
+- All templates extend `base.twig`, directly or through `page.twig` (except partials, macros, modules, and block render templates)
 - Use blocks for overridable sections: `{% block content %}{% endblock %}`
 - Use `{% include %}` for partials and modules, `{% from %}` for macros, and
   `{% embed %}` for fragments that wrap caller-supplied markup (cards with slots, callouts)
@@ -467,7 +470,7 @@ When building a new site on Tatami:
 2. Define brand colors and fonts in `src/css/tailwind.css` `@theme` block
 3. Register custom post types and taxonomies in `lib/Site.lib.php` — `professional` and `service` under the house names
 4. Set up ACF field groups per `docs/acf-fields.md`: hand-authored minimal JSON in `acf-json/` (committed), site-prefixed keys, ID return formats, no admin-UI authoring.
-5. Copy the house-tool recipes from `recipes/acf/` into `acf-json/`, replacing `SITE` with the site's key prefix (see `docs/schema.md`, `docs/faqs.md`, `docs/attribution.md`, `docs/related-posts.md` for what each one drives)
+5. Copy the house-tool recipes from `recipes/acf/` into `acf-json/`, replacing `SITE` with the site's key prefix (see `docs/schema.md`, `docs/attribution.md`, `docs/related-posts.md` for what each one drives)
 6. Build page templates in `views/` following the naming conventions above
 7. Extract reusable sections into `views/modules/` and `views/partials/`
 8. Add JS interactivity in `src/js/main.js` using the module pattern

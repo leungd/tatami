@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "tatami/faq",
+  "title": "Question",
+  "category": "text",
+  "icon": "editor-help",
+  "description": "One question and its answer in an FAQs block.",
+  "keywords": ["faq", "question", "answer"],
+  "textdomain": "tatami",
+  "parent": ["tatami/faqs"],
+  "attributes": {
+    "question": { "type": "string", "default": "" }
+  },
+  "supports": {
+    "html": false,
+    "customClassName": false
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./editor.css"
+}

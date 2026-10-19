@@ -39,6 +39,7 @@ const themePrefix = 'wp-content/themes/tatami/';
 const shipped = [
   'build/',
   'vendor/',
+  'blocks/',
   'lib/',
   'views/',
   'acf-json/',

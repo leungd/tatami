@@ -1,6 +1,6 @@
 {
   "name": "tatami",
-  "version": "7.1.1",
+  "version": "7.2.0",
   "type": "module",
   "private": true,
   "scripts": {
@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "lint": "eslint src/ && node scripts/lint-templates.mjs",
     "test": "node --test 'scripts/*.test.mjs' && php tests/run.php",
-    "format": "prettier --write 'src/**/*.{js,css}' 'views/**/*.twig'"
+    "format": "prettier --write 'src/**/*.{js,css}' 'blocks/**/*.js' 'views/**/*.twig'"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.20",

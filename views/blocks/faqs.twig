@@ -1,0 +1,12 @@
+{#
+  FAQs block (tatami/faqs) — the wrapper around a run of questions,
+  rendered by Tatami\Faqs::render_list(). Nothing renders when none of its
+  questions do.
+
+  The base adds no classes; a site spaces or frames the list here, with utilities.
+
+  questions  the rendered tatami/faq blocks (HTML, see blocks/faq.twig)
+#}
+<div>
+  {{ questions|raw }}
+</div>

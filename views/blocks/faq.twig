@@ -1,0 +1,18 @@
+{#
+  FAQ block (tatami/faq) — one question and its answer as a native
+  disclosure, rendered by Tatami\Faqs::render(). Nothing renders without
+  both a question and an answer.
+
+  The base adds no classes; a site styles the FAQ here, with utilities.
+
+  question  plain text
+  answer    the block's rendered Paragraph and List blocks (HTML)
+#}
+<details>
+  <summary>
+    {{ question }}
+  </summary>
+  <div>
+    {{ answer|raw }}
+  </div>
+</details>

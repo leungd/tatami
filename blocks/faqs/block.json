@@ -1,0 +1,16 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "tatami/faqs",
+  "title": "FAQs",
+  "category": "text",
+  "icon": "editor-help",
+  "description": "Questions and answers. Each shows as an expandable question and is added to the page's structured data for search engines and AI tools.",
+  "keywords": ["faq", "question", "answer"],
+  "textdomain": "tatami",
+  "supports": {
+    "html": false,
+    "customClassName": false
+  },
+  "editorScript": "tatami-faq-editor-script"
+}

@@ -11,8 +11,9 @@
  *   calls: this is the test seam (tests/run.php loads this file under
  *   plain `php`).
  * - Adapter — registers the filter when Yoast is active and gathers facts
- *   from the house-named ACF fields and Tatami\Attribution. No-ops without
- *   Yoast; without ACF only a post's Attribution (the Firm) applies.
+ *   from the house-named ACF fields, the FAQ blocks (Tatami\Faqs) and
+ *   Tatami\Attribution. No-ops without Yoast; without ACF only the FAQs and
+ *   a post's Attribution (the Firm) apply.
  *
  * Facts shape (every key optional; empty facts leave the graph unchanged):
  *
@@ -99,10 +100,13 @@ class Schema {
         $singular = $queried instanceof \WP_Post && is_singular();
         $facts    = [];
 
+        if ( $singular ) {
+            $facts['page'] = [ 'kind' => 'page', 'faqs' => Faqs::for_post( $queried ) ];
+        }
+
         if ( function_exists( 'get_field' ) ) {
             $facts['firm'] = $this->firm_facts();
             if ( $singular ) {
-                $facts['page'] = [ 'kind' => 'page', 'faqs' => $this->faq_facts( $queried ) ];
                 if ( is_singular( self::post_types()['professional'] ) ) {
                     $facts['page'] = $this->professional_facts( $queried ) + $facts['page'];
                 }
@@ -156,18 +160,6 @@ class Schema {
             // Only a manual excerpt; WordPress's auto-excerpt of the body is not a description.
             'description' => has_excerpt( $post ) ? trim( wp_strip_all_tags( $post->post_excerpt ) ) : '',
         ];
-    }
-
-    private function faq_facts( \WP_Post $post ): array {
-        $rows = get_field( 'faqs', $post->ID );
-        if ( ! is_array( $rows ) ) {
-            return [];
-        }
-
-        return array_values( array_filter(
-            $rows,
-            fn( $row ) => '' !== trim( (string) ( $row['question'] ?? '' ) ) && ! empty( $row['answer'] )
-        ) );
     }
 
     private function firm_facts(): array {
