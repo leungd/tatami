@@ -1,6 +1,6 @@
 <?php
 /**
- * Tatami\Faqs — FAQ blocks to schema facts, and WYSIWYG answers to blocks.
+ * Tatami\Faqs — FAQ blocks to schema facts.
  * Loaded by tests/run.php.
  */
 
@@ -80,28 +80,3 @@ assert_equal(
 );
 assert_equal( [], Faqs::from_blocks( [ paragraph_block( '<p>No FAQs.</p>' ) ] ), 'from_blocks -> no FAQ blocks, no FAQs' );
 assert_equal( [], Faqs::from_blocks( [] ), 'from_blocks -> no blocks, no FAQs' );
-
-// --- answer_blocks() ---------------------------------------------------------
-
-assert_equal(
-    "<!-- wp:paragraph -->\n<p>Usually <strong>12–18 months</strong> &amp; <a href=\"https://example.com/\">more</a>.</p>\n<!-- /wp:paragraph -->",
-    Faqs::answer_blocks( '<p>Usually <strong>12–18 months</strong> &amp; <a href="https://example.com/">more</a>.</p>' ),
-    'answer_blocks -> a paragraph keeps its inline markup and entities'
-);
-assert_equal(
-    "<!-- wp:paragraph -->\n<p>Two things:</p>\n<!-- /wp:paragraph -->\n\n"
-    . "<!-- wp:list {\"ordered\":true} -->\n<ol class=\"wp-block-list\"><!-- wp:list-item -->\n<li>A name</li>\n<!-- /wp:list-item -->\n\n"
-    . "<!-- wp:list-item -->\n<li>A <em>logo</em></li>\n<!-- /wp:list-item --></ol>\n<!-- /wp:list -->",
-    Faqs::answer_blocks( "<p>Two things:</p>\n<ol>\n<li>A name</li>\n<li>A <em>logo</em></li>\n</ol>\n" ),
-    'answer_blocks -> paragraph then ordered list'
-);
-assert_true(
-    str_starts_with( (string) Faqs::answer_blocks( '<ul><li>One</li></ul>' ), "<!-- wp:list -->\n<ul class=\"wp-block-list\">" ),
-    'answer_blocks -> unordered list has no ordered attribute'
-);
-assert_equal( null, Faqs::answer_blocks( '' ), 'answer_blocks -> empty answer needs moving by hand' );
-assert_equal( null, Faqs::answer_blocks( '<h3>Heading</h3><p>Body</p>' ), 'answer_blocks -> heading needs moving by hand' );
-assert_equal( null, Faqs::answer_blocks( '<blockquote><p>Quote</p></blockquote>' ), 'answer_blocks -> blockquote needs moving by hand' );
-assert_equal( null, Faqs::answer_blocks( '<p style="text-align: center;">Centred</p>' ), 'answer_blocks -> aligned paragraph needs moving by hand' );
-assert_equal( null, Faqs::answer_blocks( '<ul><li>One<ul><li>Nested</li></ul></li></ul>' ), 'answer_blocks -> nested list needs moving by hand' );
-assert_equal( null, Faqs::answer_blocks( 'Bare text' ), 'answer_blocks -> text outside a paragraph needs moving by hand' );

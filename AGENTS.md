@@ -49,7 +49,7 @@ lib/Vite.lib.php       → Tatami\Vite — Vite ↔ WordPress bridge (dev server
 lib/Schema.lib.php     → Tatami\Schema — extends Yoast's schema graph (pure core + WordPress adapter); base plumbing
 lib/Attribution.lib.php → Tatami\Attribution — a blog post's public credit (Firm / Written by / Reviewed by); base plumbing
 lib/SocialProfiles.lib.php → Tatami\SocialProfiles — the Firm's social profiles from Yoast Site representation (pure); base plumbing
-lib/Faqs.lib.php       → Tatami\Faqs — the FAQs blocks: registration, render, schema facts, repeater migration; base plumbing
+lib/Faqs.lib.php       → Tatami\Faqs — the FAQs blocks: registration, render, schema facts; base plumbing
 blocks/                → block.json per theme block (faqs, faq) and the unbuilt editor script and editor styles
 views/                 → All Twig templates
   base.twig            → Root HTML shell — all page templates extend this, directly or through page.twig
@@ -64,6 +64,7 @@ recipes/acf/           → ACF field-group JSON for the house tools, with a SITE
 recipes/wpe/           → The site's WP Engine push/pull ignore file; copied into app/public/ under both names
 tests/run.php          → Standalone PHP test runner for pure helpers (loads tests/test-*.php)
 CONTEXT.md             → Glossary of house terms
+CHANGELOG.md           → One entry per version, with the Upgrade steps a derivative takes when it pulls it
 ```
 
 ### Data flow
@@ -136,7 +137,7 @@ Yoast owns all SEO output and the page's single JSON-LD graph. **The theme never
 
 ### FAQs (house tool)
 
-FAQs are the **FAQs block** (`tatami/faqs`), placed by the writer in the post content on any post type with the block editor, holding one **Question** block (`tatami/faq`) per question: an inline question plus an answer limited to Paragraph and List blocks. Never an ACF repeater, never Yoast's FAQ block (hidden from the inserter). `Tatami\Faqs` registers both and renders each question through `views/blocks/faq.twig` as a native `<details>`/`<summary>` — the answer in the HTML, no script, no base classes; a site styles it in that file and `views/blocks/faqs.twig`. `Tatami\Schema` turns the same Question blocks into FAQPage `mainEntity` in Yoast's graph, automatically, without ACF. The blocks show only where a template outputs `post.content`. Sites still on the old `faqs` repeater move with `wp tatami migrate-faqs`. Details: `docs/faqs.md`.
+FAQs are the **FAQs block** (`tatami/faqs`), placed by the writer in the post content on any post type with the block editor, holding one **Question** block (`tatami/faq`) per question: an inline question plus an answer limited to Paragraph and List blocks. Never an ACF repeater, never Yoast's FAQ block (hidden from the inserter). `Tatami\Faqs` registers both and renders each question through `views/blocks/faq.twig` as a native `<details>`/`<summary>` — the answer in the HTML, no script, no base classes; a site styles it in that file and `views/blocks/faqs.twig`. `Tatami\Schema` turns the same Question blocks into FAQPage `mainEntity` in Yoast's graph, automatically, without ACF. The blocks show only where a template outputs `post.content`. Details: `docs/faqs.md`.
 
 ### Attribution (house tool)
 
@@ -414,10 +415,11 @@ pnpm format           # Prettier (JS, CSS, Twig)
 - `lib/Assets.lib.php` enqueues both the extracted CSS and the JS module via `wp_enqueue_*`
 
 ### Before committing
-1. Run `pnpm build` to ensure production build succeeds
-2. Run `pnpm lint` and `pnpm format`
-3. Never commit `node_modules/`, `vendor/`, or anything under `build/`
-4. `build/` is never committed — Tatami is a base theme; a site runs `pnpm build` before every push, and the push carries `build/` (WP Engine never builds; see `docs/deploy.md`). A missing build fails soft: the site renders unstyled and logs the error. `acf-json/` should be committed.
+1. Bump the version in `style.css` and `package.json` and add its `CHANGELOG.md` entry (see "Base changes that sites must adopt")
+2. Run `pnpm build` to ensure production build succeeds
+3. Run `pnpm lint` and `pnpm format`
+4. Never commit `node_modules/`, `vendor/`, or anything under `build/`
+5. `build/` is never committed — Tatami is a base theme; a site runs `pnpm build` before every push, and the push carries `build/` (WP Engine never builds; see `docs/deploy.md`). A missing build fails soft: the site renders unstyled and logs the error. `acf-json/` should be committed.
 
 ## Things to avoid
 
@@ -458,6 +460,12 @@ Production settings that must be in place before a site goes live — Yoast site
 ## Doc integrity
 
 AGENTS.md, `docs/`, `recipes/`, and `CONTEXT.md` must describe the repo as it is. If a change makes a statement in any of them false (files, behavior, versions, security posture, a field a recipe ships), updating that file is part of the change. A house tool's invariants live here; its full behaviour lives in its doc — keep the two consistent, and keep this file to invariants and pointers.
+
+## Base changes that sites must adopt
+
+Every version bump adds an entry to `CHANGELOG.md`: what changed and, under **Upgrade**, the exact steps a derivative takes by hand when it pulls that version (edit a template, add a filter, delete a field group). The Upgrade list is the one place those steps live — a derivative merging several versions works through them in order. A version that needs nothing from sites has no Upgrade list.
+
+When a base change retires a field, a template pattern, or a setting that derivatives already use, sites adopt it by hand by default. A migration script is the exception: write one only when real content (not placeholders) must move on more than one site. It is then a one-off file in `scripts/`, run with `wp eval-file` — never a `lib/` class or a registered WP-CLI command, so it never ships to production or loads on a request — and it is deleted once every derivative has run it. `docs/` describe the theme as it is, never how to get there from an older version.
 
 ## Extending for a new site
 

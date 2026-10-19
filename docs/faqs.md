@@ -28,12 +28,3 @@ On any singular whose content has Question blocks, `Tatami\Schema` adds `FAQPage
 FAQ rich results have been restricted to authoritative government and health sites since 2023, so law and financial firms won't get one; the value here is AI-readable Q&A, on the page and in the graph.
 
 Hand-rolled `<script type="application/ld+json">` or `itemscope` FAQ markup in a template is a defect to replace with an FAQs block, never a pattern to copy.
-
-## Moving from the `faqs` repeater
-
-Before this block, FAQs were a `faqs` ACF repeater rendered by the site's template. The schema no longer reads it. To move a site over:
-
-1. `wp tatami migrate-faqs --dry-run` lists the posts with repeater rows and what would move; `wp tatami migrate-faqs` appends an FAQs block, one question per row, to the end of each post's content. It needs ACF active. Posts that already have FAQ blocks are skipped. A row whose answer holds anything besides plain paragraphs and lists (a heading, a blockquote, an aligned paragraph, a nested list) skips its whole post with a warning — move that one by hand. The repeater's meta is left in place, and each changed post gets a revision.
-2. Remove the repeater markup from the site's templates (it would now render the FAQs twice) and make sure those templates output `post.content` where the FAQs should appear.
-3. Open each moved post, move the FAQs block where it belongs in the content, and add a heading above them if the old template supplied one.
-4. Delete the site's `group_<site>_faqs.json` from `acf-json/`.
