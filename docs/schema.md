@@ -33,6 +33,36 @@ Recipe: `recipes/acf/group_SITE_site_settings.json` — the site's Site Settings
 
 Recipe: `recipes/acf/group_SITE_professional.json` — `job_title`, the `profile_links` repeater (the regulator's directory listing first, then LinkedIn), and the `services` relationship. A site with legacy post type names changes the location value and the relationship's `post_type` to its own.
 
+## One-Professional Firm
+
+A Firm with one lawyer has no team page: its About page is the lawyer's bio. That bio is still a Professional, never a Page — the Person piece and a linked Attribution both need the Professional post type, and mapping `professional` to `page` would make every Page a Person. The site registers the post type with no archive and no rewrite slug, then serves its one post at the About URL from `Site.lib.php`, here `/about/`:
+
+```php
+public function register_post_types() {
+    register_post_type( 'professional', [
+        'labels'       => [ 'name' => __( 'About', 'tatami' ), 'singular_name' => __( 'Profile', 'tatami' ) ],
+        'public'       => true,
+        'show_in_rest' => true,
+        'has_archive'  => false,
+        'rewrite'      => false,
+        'supports'     => [ 'title', 'editor', 'thumbnail', 'excerpt' ],
+    ] );
+    add_rewrite_rule( '^about/?$', 'index.php?professional=jane-doe', 'top' ); // the Professional's slug
+}
+```
+
+```php
+// in __construct()
+add_filter( 'post_type_link', fn( $url, $post ) => 'professional' === $post->post_type ? home_url( '/about/' ) : $url, 10, 2 );
+```
+
+The path is the site's choice — `/about/` here, but `/our-lawyer/` or the lawyer's name works the same; the rewrite rule and the filter must name the same one. Keep the URL the old bio page had, so nothing needs a redirect. `get_permalink()` then returns that path, so the byline link, the Person's `@id` (`<path>#person`), Yoast's canonical and the sitemap all follow. Then:
+
+- Delete the old About page (and empty the trash) so no Page claims the slug, then flush rewrite rules (Settings → Permalinks → Save).
+- Point the nav's About item at the Professional, not a Page.
+- The profile renders through `single-professional.twig`, with the hero like any single (`docs/hero.md`).
+- Site representation stays an Organization. Representing the site as a Person drops the Firm's facts — the graph has no `#organization` piece to extend.
+
 ## Address (house tool)
 
 `macros/address.twig` renders an `address` group in the Canadian format Google Business Profile uses, so the visible address matches the listing and the schema: single-line `100 King St W Suite 5600, Toronto, ON M5X 1C9`, or with `multiline` the street, `<br>`, then `Toronto, ON M5X 1C9`. Empty parts are skipped, country is not displayed (it exists for schema), and it emits no wrapper element — the caller places it.

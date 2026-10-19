@@ -55,5 +55,5 @@ Through `Tatami\Schema`, per state:
 
 ## Field (per site)
 
-Recipe: `recipes/acf/group_SITE_attribution.json` — copy it into `acf-json/` and replace `SITE` with the site prefix (see `docs/acf-fields.md`). The field *names* are fixed — `Tatami\Attribution` reads them. Picking a Professional writes their title into `attribution_name` on save, so the name costs editors nothing; renaming a Professional updates a post's credit the next time that post is saved. A site with a legacy Professional post type name changes the person field's `post_type` to its own.
+Recipe: `recipes/acf/group_SITE_attribution.json` — copy it into `acf-json/` and replace `SITE` with the site prefix (see `docs/acf-fields.md`). The field *names* are fixed — `Tatami\Attribution` reads them. Picking a Professional writes their title into `attribution_name` on save, so the name costs editors nothing; renaming a Professional updates a post's credit the next time that post is saved. A site with a legacy Professional post type name changes the person field's `post_type` to its own. A Firm with one lawyer still credits a Professional, served at its About URL — see "One-Professional Firm" in `docs/schema.md`.
 
