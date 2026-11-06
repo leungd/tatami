@@ -33,7 +33,7 @@ Recipe: `recipes/acf/group_SITE_site_settings.json` — the site's Site Settings
 
 Who counts as a Professional is defined in `CONTEXT.md`. A non-licensed Professional (a profiled law clerk or assistant) uses the same post type, and their Person carries the same facts.
 
-Recipe: `recipes/acf/group_SITE_professional.json` — `job_title`, the `profile_links` repeater (for a licensed Professional the regulator's directory listing first, then LinkedIn; for anyone else LinkedIn first), and the `services` relationship. A site with legacy post type names changes the location value and the relationship's `post_type` to its own.
+Recipe: `recipes/acf/group_SITE_professional.json` — `job_title`, the `profile_links` repeater (the regulator's listing first for a licensed Professional, then LinkedIn), and the `services` relationship. A site with legacy post type names changes the location value and the relationship's `post_type` to its own.
 
 ## One-Professional Firm
 

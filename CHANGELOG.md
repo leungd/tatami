@@ -2,6 +2,14 @@
 
 One entry per version, newest first. **Upgrade** lists what a derivative does by hand when it pulls that version; a version without it needs nothing. A derivative that skips versions works through every Upgrade list between its version and the new one, oldest first.
 
+## 7.2.3 — 2026-11-06
+
+- The Professional recipe's `profile_links` instructions are shorter and name no particular regulator.
+
+**Upgrade**
+
+1. Any site, optional: copy the new `profile_links` instructions into the site's `acf-json/group_<site>_professional.json`. Wording only — no field changes. A site that hasn't yet taken 7.2.2's optional step can take this one instead.
+
 ## 7.2.2 — 2026-11-06
 
 - `partials/pagination.twig` renders the gap between page numbers as `…`, not the literal `&hellip;` Timber hands it.
