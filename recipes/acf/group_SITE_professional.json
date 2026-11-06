@@ -14,7 +14,7 @@
       "label": "Profile Links",
       "name": "profile_links",
       "type": "repeater",
-      "instructions": "This person's listings elsewhere, which confirm who they are to search engines. Priorities: the regulator's directory listing (e.g. the Law Society directory), then LinkedIn.",
+      "instructions": "This person's listings elsewhere, which confirm who they are to search engines. Priorities: for a licensed professional, the regulator's directory listing (e.g. the Law Society directory), then LinkedIn; for anyone else, LinkedIn first.",
       "layout": "table",
       "button_label": "Add Link",
       "sub_fields": [

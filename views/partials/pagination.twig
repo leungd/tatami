@@ -65,13 +65,6 @@
               >
                 {{ page.title }}
               </span>
-            {% elseif page.title == '…' %}
-              {# Ellipsis #}
-              <span
-                class="px-2 py-2 text-sm text-neutral-400 pointer-events-none"
-              >
-                {{ page.title }}
-              </span>
             {% else %}
               {# Regular Page Link #}
               <a
@@ -90,8 +83,9 @@
                 {{ page.title }}
               </span>
             {% else %}
+              {# Timber titles the gap '&hellip;', already HTML-encoded #}
               <span class="px-2 py-2 text-sm text-neutral-400">
-                {{ page.title }}
+                {{ page.title == '&hellip;' ? '…' : page.title }}
               </span>
             {% endif %}
           {% endif %}

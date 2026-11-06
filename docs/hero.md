@@ -37,7 +37,7 @@ A page whose top section genuinely doesn't fit the frame may skip it. Try the fr
 
 ## Featured images
 
-Routers for singular views assign `$context['featured_image'] = Tatami\Queries::featured_image_with_fallback($post);` — a Timber image object with parent fallback (a page without a thumbnail inherits its parent's). Templates read `featured_image.src`, `featured_image.alt`, `featured_image.width`, `featured_image.height`; `partials/hero.twig` consumes it as the optional `heroMedia`. Derivative heroes build on this key.
+Routers for singular views and the posts page (from the assigned Blog page) assign `$context['featured_image'] = Tatami\Queries::featured_image_with_fallback($post);` — a Timber image object with parent fallback (a page without a thumbnail inherits its parent's). Templates read `featured_image.src`, `featured_image.alt`, `featured_image.width`, `featured_image.height`; `partials/hero.twig` consumes it as the optional `heroMedia`. Derivative heroes build on this key.
 
 ## Page structure
 

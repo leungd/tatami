@@ -2,6 +2,17 @@
 
 One entry per version, newest first. **Upgrade** lists what a derivative does by hand when it pulls that version; a version without it needs nothing. A derivative that skips versions works through every Upgrade list between its version and the new one, oldest first.
 
+## 7.2.2 — 2026-11-06
+
+- `partials/pagination.twig` renders the gap between page numbers as `…`, not the literal `&hellip;` Timber hands it.
+- `home.php` sets `featured_image` from the posts page, so its hero shows the image like any other page.
+- A Professional is anyone at the Firm with their own profile page, licensed or not; support staff with a profile are Professionals, staff without one are not (`CONTEXT.md`, `docs/schema.md`). The Professional recipe's `profile_links` instructions put the regulator's listing first only for a licensed Professional.
+
+**Upgrade**
+
+1. A site that carries its own fix for the pagination ellipsis or the posts page's `featured_image`: drop it in favour of the base's (expect a merge conflict in `views/partials/pagination.twig` or `home.php`).
+2. Any site, optional: copy the new `profile_links` instructions into the site's `acf-json/group_<site>_professional.json`. Wording only — no field changes.
+
 ## 7.2.1 — 2026-10-19
 
 - Removed the `wp tatami migrate-faqs` command; 7.2.0's FAQ upgrade is done by hand.

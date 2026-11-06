@@ -25,7 +25,7 @@ The Firm, or one of its people, as a distinct real-world thing that search engin
 _Avoid_: Brand, profile
 
 **Professional**:
-A person at the Firm who has their own profile page — a lawyer, advisor, accountant. Each site labels them however it likes on screen; the house word is Professional. Support staff without profile pages are not Professionals.
+A person at the Firm who has their own profile page, licensed or not — a lawyer, advisor, accountant, or a law clerk or assistant the Firm profiles. Each site labels them however it likes on screen; the house word is Professional. Staff without profile pages are not Professionals.
 _Avoid_: Lawyer, team member, staff, person (each is either firm-specific or too broad)
 
 **Attribution**:

@@ -21,6 +21,7 @@ if ( $blog_page ) {
     $context['post'] = $blog_page;
     // Promote the title unless the Blog page's body carries its own <h1>.
     $context['hero_title_tag'] = str_contains( $blog_page->post_content, '<h1' ) ? 'p' : 'h1';
+    $context['featured_image'] = Tatami\Queries::featured_image_with_fallback( $blog_page );
 }
 $context['title'] = $blog_page ? $blog_page->title() : __( 'Blog', 'tatami' );
 
