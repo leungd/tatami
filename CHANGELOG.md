@@ -4,11 +4,11 @@ One entry per version, newest first. **Upgrade** lists what a derivative does by
 
 ## 7.2.3 — 2026-11-06
 
-- The Professional recipe's `profile_links` instructions are shorter and name no particular regulator.
+- The Professional recipe's instructions drop the schema jargon: `profile_links` is shorter and names no particular regulator, and `job_title` and `services` say what to enter, not where it goes in the graph.
 
 **Upgrade**
 
-1. Any site, optional: copy the new `profile_links` instructions into the site's `acf-json/group_<site>_professional.json`. Wording only — no field changes. A site that hasn't yet taken 7.2.2's optional step can take this one instead.
+1. Any site, optional: copy the new `job_title`, `profile_links` and `services` instructions into the site's `acf-json/group_<site>_professional.json`. Wording only — no field changes. A site that hasn't yet taken 7.2.2's optional step can take this one instead.
 
 ## 7.2.2 — 2026-11-06
 

@@ -7,7 +7,7 @@
       "label": "Job Title",
       "name": "job_title",
       "type": "text",
-      "instructions": "Shown in schema as the Person's job title, e.g. Partner, Associate."
+      "instructions": "Their title at the Firm, e.g. Partner, Associate."
     },
     {
       "key": "field_SITE_pro_profile_links",
@@ -26,7 +26,7 @@
       "label": "Services",
       "name": "services",
       "type": "relationship",
-      "instructions": "Services this Professional practises — listed on their Person as knowsAbout.",
+      "instructions": "The Services this person works in. Leave empty if none apply.",
       "post_type": ["service"],
       "filters": ["search"],
       "return_format": "id"
